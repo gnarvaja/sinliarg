@@ -1,0 +1,71 @@
+# Gramática en formato RELAX-NG de los mensajes SINLI-Argentina
+grammar {
+    start =
+        element PEDIDO { archivo & origen & destino & contenidopedido } |
+        element REMITO { archivo & origen & destino & contenidoremito }
+    ## Informacion general del archivo/mensaje
+    archivo = element ARCHIVO {
+            ## Descripción en texto libre del contenido del archivo
+            element DESCRIPCION { text } &
+            element FECHA { xsd:date } &
+            element VERSION { text } &
+            ## Tipo de archivo/mensaje. Coincide con el elemento raíz
+            element CODIGO { "PEDIDO" | "REMITO" } &
+            ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
+            ## si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
+            ## como duplicados
+            element IDENTIFICADOR { text }?
+    }
+    ## Información del remitente
+    origen = element ORIGEN {
+            element NOMBRE { text } &
+            element CUIT { text }? &
+            ## Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+            element ID_SUCURSAL { text }? &
+            element CODIGO_SINLI { text }
+    }
+    ## Información del destinatario
+    destino = element DESTINO {
+            element NOMBRE { text } &
+            element CUIT { text }? &
+            ## Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+            element ID_SUCURSAL { text }? &
+            element CODIGO_SINLI { text }
+    }
+    librocantidad = element ITEM {
+        element CANTIDAD { xsd:int } &
+        id_libro
+    }
+    id_libro = element ID_LIBRO {
+        element ISBN_13 { text } &
+        element ISBN_10 { text } &
+        element COD_ARTICULO { text } ? &
+        element EAN { text } &
+        element TITULO { text } ?
+    }
+    contenidopedido = element CONTENIDO {
+        element ITEM {
+            element NUMERO_DOCUMENTO { text } &
+            element FECHA { xsd:date } &
+            element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } &
+            element TIPO_ENTREGA { "ENVIO" | "RETIRA_CLIENTE" } &
+            element DETALLE {
+                ## Sucursal a la que corresponde el pedido. Si no está presente se considera
+                ## la sucursal indicada en la cabecera
+                attribute sucursal { text }?,
+                librocantidad+
+            }+
+        }
+    }
+    contenidoremito = element CONTENIDO {
+        element ITEM {
+            element NUMERO_DOCUMENTO { text } &
+            element FECHA { xsd:date } &
+            element TIPO_OPERACION { "FIRME" | "CONSIGNACION" } &
+            element TIPO_ENTREGA { "ENVIO" | "RETIRA_CLIENTE" } &
+            element DETALLE {
+                librocantidad+
+            }+
+        }
+    }
+}

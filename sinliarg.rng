@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Gramática en formato RELAX-NG de los mensajes SINLI-Argentina -->
+<grammar xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0" xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <start>
+    <choice>
+      <element name="PEDIDO">
+        <interleave>
+          <ref name="archivo"/>
+          <ref name="origen"/>
+          <ref name="destino"/>
+          <ref name="contenidopedido"/>
+        </interleave>
+      </element>
+      <element name="REMITO">
+        <interleave>
+          <ref name="archivo"/>
+          <ref name="origen"/>
+          <ref name="destino"/>
+          <ref name="contenidoremito"/>
+        </interleave>
+      </element>
+    </choice>
+  </start>
+  <define name="archivo">
+    <a:documentation>Informacion general del archivo/mensaje</a:documentation>
+    <element name="ARCHIVO">
+      <interleave>
+        <element name="DESCRIPCION">
+          <a:documentation>Descripción en texto libre del contenido del archivo</a:documentation>
+          <text/>
+        </element>
+        <element name="FECHA">
+          <data type="date"/>
+        </element>
+        <element name="VERSION">
+          <text/>
+        </element>
+        <element name="CODIGO">
+          <a:documentation>Tipo de archivo/mensaje. Coincide con el elemento raíz</a:documentation>
+          <choice>
+            <value>PEDIDO</value>
+            <value>REMITO</value>
+          </choice>
+        </element>
+        <optional>
+          <element name="IDENTIFICADOR">
+            <a:documentation>Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
+si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
+como duplicados</a:documentation>
+            <text/>
+          </element>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+  <define name="origen">
+    <a:documentation>Información del remitente</a:documentation>
+    <element name="ORIGEN">
+      <interleave>
+        <element name="NOMBRE">
+          <text/>
+        </element>
+        <optional>
+          <element name="CUIT">
+            <text/>
+          </element>
+        </optional>
+        <optional>
+          <element name="ID_SUCURSAL">
+            <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.</a:documentation>
+            <text/>
+          </element>
+        </optional>
+        <element name="CODIGO_SINLI">
+          <text/>
+        </element>
+      </interleave>
+    </element>
+  </define>
+  <define name="destino">
+    <a:documentation>Información del destinatario</a:documentation>
+    <element name="DESTINO">
+      <interleave>
+        <element name="NOMBRE">
+          <text/>
+        </element>
+        <optional>
+          <element name="CUIT">
+            <text/>
+          </element>
+        </optional>
+        <optional>
+          <element name="ID_SUCURSAL">
+            <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.</a:documentation>
+            <text/>
+          </element>
+        </optional>
+        <element name="CODIGO_SINLI">
+          <text/>
+        </element>
+      </interleave>
+    </element>
+  </define>
+  <define name="librocantidad">
+    <element name="ITEM">
+      <interleave>
+        <element name="CANTIDAD">
+          <data type="int"/>
+        </element>
+        <ref name="id_libro"/>
+      </interleave>
+    </element>
+  </define>
+  <define name="id_libro">
+    <element name="ID_LIBRO">
+      <interleave>
+        <element name="ISBN_13">
+          <text/>
+        </element>
+        <element name="ISBN_10">
+          <text/>
+        </element>
+        <optional>
+          <element name="COD_ARTICULO">
+            <text/>
+          </element>
+        </optional>
+        <element name="EAN">
+          <text/>
+        </element>
+        <optional>
+          <element name="TITULO">
+            <text/>
+          </element>
+        </optional>
+      </interleave>
+    </element>
+  </define>
+  <define name="contenidopedido">
+    <element name="CONTENIDO">
+      <element name="ITEM">
+        <interleave>
+          <element name="NUMERO_DOCUMENTO">
+            <text/>
+          </element>
+          <element name="FECHA">
+            <data type="date"/>
+          </element>
+          <element name="TIPO_OPERACION">
+            <choice>
+              <value>FIRME</value>
+              <value>CONSIGNACION</value>
+              <value>FIRME_CON_DERECHO</value>
+              <value>DONACION</value>
+            </choice>
+          </element>
+          <element name="TIPO_ENTREGA">
+            <choice>
+              <value>ENVIO</value>
+              <value>RETIRA_CLIENTE</value>
+            </choice>
+          </element>
+          <oneOrMore>
+            <element name="DETALLE">
+              <optional>
+                <attribute name="sucursal">
+                  <a:documentation>Sucursal a la que corresponde el pedido. Si no está presente se considera
+la sucursal indicada en la cabecera</a:documentation>
+                </attribute>
+              </optional>
+              <oneOrMore>
+                <ref name="librocantidad"/>
+              </oneOrMore>
+            </element>
+          </oneOrMore>
+        </interleave>
+      </element>
+    </element>
+  </define>
+  <define name="contenidoremito">
+    <element name="CONTENIDO">
+      <element name="ITEM">
+        <interleave>
+          <element name="NUMERO_DOCUMENTO">
+            <text/>
+          </element>
+          <element name="FECHA">
+            <data type="date"/>
+          </element>
+          <element name="TIPO_OPERACION">
+            <choice>
+              <value>FIRME</value>
+              <value>CONSIGNACION</value>
+            </choice>
+          </element>
+          <element name="TIPO_ENTREGA">
+            <choice>
+              <value>ENVIO</value>
+              <value>RETIRA_CLIENTE</value>
+            </choice>
+          </element>
+          <oneOrMore>
+            <element name="DETALLE">
+              <oneOrMore>
+                <ref name="librocantidad"/>
+              </oneOrMore>
+            </element>
+          </oneOrMore>
+        </interleave>
+      </element>
+    </element>
+  </define>
+</grammar>
