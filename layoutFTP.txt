@@ -1,0 +1,12 @@
+<carpeta-raíz>/ (configurable, sin espacios)
+	LAR00021_EAR00023/ (generados desde LAR00021 para EAR00023)
+		PEDIDO/
+			PEDIDO_(texto-libre).xml
+
+		REMITO/
+		...
+	EAR00023_LAR00021/ (generados desde EAR00023 para LAR00021)
+		PEDIDO/
+
+		REMITO/
+		...

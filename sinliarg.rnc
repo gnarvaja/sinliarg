@@ -1,16 +1,16 @@
 # Gramática en formato RELAX-NG de los mensajes SINLI-Argentina
 grammar {
     start =
-        element PEDIDO { archivo & origen & destino & contenidopedido } |
-        element REMITO { archivo & origen & destino & contenidoremito }
+        element PEDIDO { archivo , origen , destino , contenidopedido } |
+        element REMITO { archivo , origen , destino , contenidoremito }
     ## Informacion general del archivo/mensaje
     archivo = element ARCHIVO {
             ## Descripción en texto libre del contenido del archivo
-            element DESCRIPCION { text } &
-            element FECHA { xsd:date } &
-            element VERSION { text } &
+            element DESCRIPCION { text } ,
+            element FECHA { xsd:dateTime } , # AAAA-MM-DDTHH:MM:SS
+            element VERSION { "1.0" | "1.1" } ,
             ## Tipo de archivo/mensaje. Coincide con el elemento raíz
-            element CODIGO { "PEDIDO" | "REMITO" } &
+            element CODIGO { "PEDIDO" | "REMITO" } ,
             ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
             ## si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
             ## como duplicados
@@ -18,54 +18,78 @@ grammar {
     }
     ## Información del remitente
     origen = element ORIGEN {
-            element NOMBRE { text } &
-            element CUIT { text }? &
+            element NOMBRE { text } ,
+            element ID_FISCAL { text }? ,
             ## Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
-            element ID_SUCURSAL { text }? &
+            ## Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+            ##   1. PEDIDO, cuando no se indica en el campo "DETALLE"
+            element ID_SUCURSAL { text }? ,
             element CODIGO_SINLI { text }
     }
     ## Información del destinatario
     destino = element DESTINO {
-            element NOMBRE { text } &
-            element CUIT { text }? &
+            element NOMBRE { text } ,
+            element ID_FISCAL { text }? ,
             ## Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
-            element ID_SUCURSAL { text }? &
+            ## Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+            ##   1. REMITO
+            element ID_SUCURSAL { text }? ,
             element CODIGO_SINLI { text }
     }
     librocantidad = element ITEM {
-        element CANTIDAD { xsd:int } &
+        element CANTIDAD { xsd:int } ,
         id_libro
     }
+    precio = element PRECIO {
+        element MONEDA { "ARS" | "USD" | "EUR" },
+        element VALOR { xsd:decimal },
+        element TIPO { "PVP" | "NETO" }
+    }
+    librocantidadpreciooptativo = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro,
+        precio?
+    }
     id_libro = element ID_LIBRO {
-        element ISBN_13 { text } &
-        element ISBN_10 { text } &
-        element COD_ARTICULO { text } ? &
-        element EAN { text } &
+        ## Se deben tratar de completar la mayor cantidad de códigos
+        ## posibles, para facilitar al receptor resolver ambigüedades
+
+        element EAN { text } ,
+        ## ISBN_13 con o sin guiones, de ser posible, con guiones
+        element ISBN_13 { text }? ,
+        element ISBN_10 { text }? ,
+        ## Es el código interno con el que la EDITORIAL (o PROVEEDOR),
+        ## se refiere al libro.
+        element COD_ARTICULO { text } ? ,
         element TITULO { text } ?
     }
     contenidopedido = element CONTENIDO {
-        element ITEM {
-            element NUMERO_DOCUMENTO { text } &
-            element FECHA { xsd:date } &
-            element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } &
-            element TIPO_ENTREGA { "ENVIO" | "RETIRA_CLIENTE" } &
-            element DETALLE {
-                ## Sucursal a la que corresponde el pedido. Si no está presente se considera
-                ## la sucursal indicada en la cabecera
-                attribute sucursal { text }?,
-                librocantidad+
-            }+
-        }
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
+        element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
+        element TRANSPORTE { text }? ,
+        element PAGA_EN { "ORIGEN" | "DESTINO" }? ,
+        element OBSERVACIONES_ENTREGA { text }? ,
+        element DETALLE {
+            ## Sucursal a la que corresponde el pedido. Si no está presente se considera
+            ## la sucursal indicada en la cabecera
+            attribute ID_SUCURSAL { text }?,
+            librocantidad+
+        }+
     }
     contenidoremito = element CONTENIDO {
-        element ITEM {
-            element NUMERO_DOCUMENTO { text } &
-            element FECHA { xsd:date } &
-            element TIPO_OPERACION { "FIRME" | "CONSIGNACION" } &
-            element TIPO_ENTREGA { "ENVIO" | "RETIRA_CLIENTE" } &
-            element DETALLE {
-                librocantidad+
-            }+
-        }
+        ## En el caso de Argentina debe indicarse el número completo
+        ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element NRO_PEDIDO { text }? ,
+        element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
+        element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
+        element TRANSPORTE { text }? ,
+        element OBSERVACIONES_ENTREGA { text }? ,
+        element DETALLE {
+            librocantidadpreciooptativo+
+        }+
     }
 }

@@ -4,210 +4,273 @@
   <start>
     <choice>
       <element name="PEDIDO">
-        <interleave>
-          <ref name="archivo"/>
-          <ref name="origen"/>
-          <ref name="destino"/>
-          <ref name="contenidopedido"/>
-        </interleave>
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidopedido"/>
       </element>
       <element name="REMITO">
-        <interleave>
-          <ref name="archivo"/>
-          <ref name="origen"/>
-          <ref name="destino"/>
-          <ref name="contenidoremito"/>
-        </interleave>
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidoremito"/>
       </element>
     </choice>
   </start>
   <define name="archivo">
     <a:documentation>Informacion general del archivo/mensaje</a:documentation>
     <element name="ARCHIVO">
-      <interleave>
-        <element name="DESCRIPCION">
-          <a:documentation>Descripción en texto libre del contenido del archivo</a:documentation>
-          <text/>
-        </element>
-        <element name="FECHA">
-          <data type="date"/>
-        </element>
-        <element name="VERSION">
-          <text/>
-        </element>
-        <element name="CODIGO">
-          <a:documentation>Tipo de archivo/mensaje. Coincide con el elemento raíz</a:documentation>
-          <choice>
-            <value>PEDIDO</value>
-            <value>REMITO</value>
-          </choice>
-        </element>
-        <optional>
-          <element name="IDENTIFICADOR">
-            <a:documentation>Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
+      <element name="DESCRIPCION">
+        <a:documentation>Descripción en texto libre del contenido del archivo</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <!-- AAAA-MM-DDTHH:MM:SS -->
+      <element name="VERSION">
+        <choice>
+          <value>1.0</value>
+          <value>1.1</value>
+        </choice>
+      </element>
+      <element name="CODIGO">
+        <a:documentation>Tipo de archivo/mensaje. Coincide con el elemento raíz</a:documentation>
+        <choice>
+          <value>PEDIDO</value>
+          <value>REMITO</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="IDENTIFICADOR">
+          <a:documentation>Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
 si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
 como duplicados</a:documentation>
-            <text/>
-          </element>
-        </optional>
-      </interleave>
+          <text/>
+        </element>
+      </optional>
     </element>
   </define>
   <define name="origen">
     <a:documentation>Información del remitente</a:documentation>
     <element name="ORIGEN">
-      <interleave>
-        <element name="NOMBRE">
+      <element name="NOMBRE">
+        <text/>
+      </element>
+      <optional>
+        <element name="ID_FISCAL">
           <text/>
         </element>
-        <optional>
-          <element name="CUIT">
-            <text/>
-          </element>
-        </optional>
-        <optional>
-          <element name="ID_SUCURSAL">
-            <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.</a:documentation>
-            <text/>
-          </element>
-        </optional>
-        <element name="CODIGO_SINLI">
+      </optional>
+      <optional>
+        <element name="ID_SUCURSAL">
+          <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+  1. PEDIDO, cuando no se indica en el campo "DETALLE"</a:documentation>
           <text/>
         </element>
-      </interleave>
+      </optional>
+      <element name="CODIGO_SINLI">
+        <text/>
+      </element>
     </element>
   </define>
   <define name="destino">
     <a:documentation>Información del destinatario</a:documentation>
     <element name="DESTINO">
-      <interleave>
-        <element name="NOMBRE">
+      <element name="NOMBRE">
+        <text/>
+      </element>
+      <optional>
+        <element name="ID_FISCAL">
           <text/>
         </element>
-        <optional>
-          <element name="CUIT">
-            <text/>
-          </element>
-        </optional>
-        <optional>
-          <element name="ID_SUCURSAL">
-            <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.</a:documentation>
-            <text/>
-          </element>
-        </optional>
-        <element name="CODIGO_SINLI">
+      </optional>
+      <optional>
+        <element name="ID_SUCURSAL">
+          <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+  1. REMITO</a:documentation>
           <text/>
         </element>
-      </interleave>
+      </optional>
+      <element name="CODIGO_SINLI">
+        <text/>
+      </element>
     </element>
   </define>
   <define name="librocantidad">
     <element name="ITEM">
-      <interleave>
-        <element name="CANTIDAD">
-          <data type="int"/>
-        </element>
-        <ref name="id_libro"/>
-      </interleave>
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+    </element>
+  </define>
+  <define name="precio">
+    <element name="PRECIO">
+      <element name="MONEDA">
+        <choice>
+          <value>ARS</value>
+          <value>USD</value>
+          <value>EUR</value>
+        </choice>
+      </element>
+      <element name="VALOR">
+        <data type="decimal"/>
+      </element>
+      <element name="TIPO">
+        <choice>
+          <value>PVP</value>
+          <value>NETO</value>
+        </choice>
+      </element>
+    </element>
+  </define>
+  <define name="librocantidadpreciooptativo">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <optional>
+        <ref name="precio"/>
+      </optional>
     </element>
   </define>
   <define name="id_libro">
     <element name="ID_LIBRO">
-      <interleave>
+      <element name="EAN">
+        <a:documentation>Se deben tratar de completar la mayor cantidad de códigos
+posibles, para facilitar al receptor resolver ambigüedades</a:documentation>
+        <text/>
+      </element>
+      <optional>
         <element name="ISBN_13">
+          <a:documentation>ISBN_13 con o sin guiones, de ser posible, con guiones</a:documentation>
           <text/>
         </element>
+      </optional>
+      <optional>
         <element name="ISBN_10">
           <text/>
         </element>
-        <optional>
-          <element name="COD_ARTICULO">
-            <text/>
-          </element>
-        </optional>
-        <element name="EAN">
+      </optional>
+      <optional>
+        <element name="COD_ARTICULO">
+          <a:documentation>Es el código interno con el que la EDITORIAL (o PROVEEDOR),
+se refiere al libro.</a:documentation>
           <text/>
         </element>
-        <optional>
-          <element name="TITULO">
-            <text/>
-          </element>
-        </optional>
-      </interleave>
+      </optional>
+      <optional>
+        <element name="TITULO">
+          <text/>
+        </element>
+      </optional>
     </element>
   </define>
   <define name="contenidopedido">
     <element name="CONTENIDO">
-      <element name="ITEM">
-        <interleave>
-          <element name="NUMERO_DOCUMENTO">
-            <text/>
-          </element>
-          <element name="FECHA">
-            <data type="date"/>
-          </element>
-          <element name="TIPO_OPERACION">
-            <choice>
-              <value>FIRME</value>
-              <value>CONSIGNACION</value>
-              <value>FIRME_CON_DERECHO</value>
-              <value>DONACION</value>
-            </choice>
-          </element>
-          <element name="TIPO_ENTREGA">
-            <choice>
-              <value>ENVIO</value>
-              <value>RETIRA_CLIENTE</value>
-            </choice>
-          </element>
-          <oneOrMore>
-            <element name="DETALLE">
-              <optional>
-                <attribute name="sucursal">
-                  <a:documentation>Sucursal a la que corresponde el pedido. Si no está presente se considera
-la sucursal indicada en la cabecera</a:documentation>
-                </attribute>
-              </optional>
-              <oneOrMore>
-                <ref name="librocantidad"/>
-              </oneOrMore>
-            </element>
-          </oneOrMore>
-        </interleave>
+      <element name="NUMERO_DOCUMENTO">
+        <text/>
       </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>CONSIGNACION</value>
+          <value>FIRME_CON_DERECHO</value>
+          <value>DONACION</value>
+        </choice>
+      </element>
+      <element name="TIPO_ENTREGA">
+        <choice>
+          <value>ENVIO</value>
+          <value>RETIRA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="TRANSPORTE">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="PAGA_EN">
+          <choice>
+            <value>ORIGEN</value>
+            <value>DESTINO</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES_ENTREGA">
+          <text/>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <optional>
+            <attribute name="ID_SUCURSAL">
+              <a:documentation>Sucursal a la que corresponde el pedido. Si no está presente se considera
+la sucursal indicada en la cabecera</a:documentation>
+            </attribute>
+          </optional>
+          <oneOrMore>
+            <ref name="librocantidad"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
     </element>
   </define>
   <define name="contenidoremito">
     <element name="CONTENIDO">
-      <element name="ITEM">
-        <interleave>
-          <element name="NUMERO_DOCUMENTO">
-            <text/>
-          </element>
-          <element name="FECHA">
-            <data type="date"/>
-          </element>
-          <element name="TIPO_OPERACION">
-            <choice>
-              <value>FIRME</value>
-              <value>CONSIGNACION</value>
-            </choice>
-          </element>
-          <element name="TIPO_ENTREGA">
-            <choice>
-              <value>ENVIO</value>
-              <value>RETIRA_CLIENTE</value>
-            </choice>
-          </element>
-          <oneOrMore>
-            <element name="DETALLE">
-              <oneOrMore>
-                <ref name="librocantidad"/>
-              </oneOrMore>
-            </element>
-          </oneOrMore>
-        </interleave>
+      <element name="NUMERO_DOCUMENTO">
+        <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        <text/>
       </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <optional>
+        <element name="NRO_PEDIDO">
+          <text/>
+        </element>
+      </optional>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>CONSIGNACION</value>
+          <value>FIRME_CON_DERECHO</value>
+          <value>DONACION</value>
+        </choice>
+      </element>
+      <element name="TIPO_ENTREGA">
+        <choice>
+          <value>ENVIO</value>
+          <value>RETIRA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="TRANSPORTE">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES_ENTREGA">
+          <text/>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="librocantidadpreciooptativo"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
     </element>
   </define>
 </grammar>
