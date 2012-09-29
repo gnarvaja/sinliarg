@@ -2,7 +2,10 @@
 grammar {
     start =
         element PEDIDO { archivo , origen , destino , contenidopedido } |
-        element REMITO { archivo , origen , destino , contenidoremito }
+        element REMITO { archivo , origen , destino , contenidoremito } |
+        element FACTURA { archivo , origen , destino , contenidofactura } |
+        element LIQVTA { archivo , origen , destino , contenidoliqvta } |
+        element FACREM { archivo , origen , destino , contenidofacturaremito }
     ## Informacion general del archivo/mensaje
     archivo = element ARCHIVO {
             ## Descripción en texto libre del contenido del archivo
@@ -10,7 +13,7 @@ grammar {
             element FECHA { xsd:dateTime } , # AAAA-MM-DDTHH:MM:SS
             element VERSION { "1.0" | "1.1" } ,
             ## Tipo de archivo/mensaje. Coincide con el elemento raíz
-            element CODIGO { "PEDIDO" | "REMITO" } ,
+            element CODIGO { "PEDIDO" | "REMITO" | "FACTURA" | "LIQVTA" | "FACREM" } ,
             ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
             ## si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
             ## como duplicados
@@ -40,8 +43,10 @@ grammar {
         element CANTIDAD { xsd:int } ,
         id_libro
     }
+    moneda = element MONEDA { "ARS" | "USD" | "EUR" }
+
     precio = element PRECIO {
-        element MONEDA { "ARS" | "USD" | "EUR" },
+        moneda,
         element VALOR { xsd:decimal },
         element TIPO { "PVP" | "NETO" }
     }
@@ -88,6 +93,100 @@ grammar {
         element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
         element TRANSPORTE { text }? ,
         element OBSERVACIONES_ENTREGA { text }? ,
+        element DETALLE {
+            librocantidadpreciooptativo+
+        }+
+    }
+    impuesto = element IMPUESTO {
+        element TIPO { "IVA" | "PERC_IIBB" | "PERC_IVA" },
+        element ALICUOTA { xsd:decimal }?,
+        ## Base sobre la que se calcula el importe, en el caso del IVA
+        ## sería el NETO GRAVADO
+        element BASE { xsd:decimal }?,
+        element IMPORTE {xsd:decimal }
+    }
+
+    referencia_a_remito = element ITEM {
+        element NUMERO_REMITO { text },
+        element CANTIDAD { xsd:int }
+    }
+
+    itemfactura = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro ,
+        precio ,
+        element DESCUENTO { xsd:decimal } ,
+        ## Detalle de los remitos a los que aplica el ítem de factura
+        ## Si está indicado, la suma de las cantidades debe coincidir con la
+        ## cantidad del ítem
+        element REMITOS {
+            referencia_a_remito+
+        }?
+    }
+
+    contenidofactura = element CONTENIDO {
+        ## En el caso de Argentina debe indicarse el número completo
+        ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element FECHA_VTO { xsd:dateTime } ,
+        element TIPO_OPERACION { "FIRME" | "BAJA CONSIGNACION" | "FIRME_CON_DERECHO" } ,
+        ## Número de pedido o de liquidación de venta, según corresponda
+        element NUMERO_PEDIDO { text }? ,
+        ## Número de remito al que aplica la factura. Indicarlo implica que TODA la factura aplica a este remito.
+        element NUMERO_REMITO { text }? ,
+        ## Total de la factura
+        element TOTAL {
+            moneda,
+            element VALOR { xsd:decimal }
+        },
+        element IMPUESTOS {
+            impuesto+
+        }?,
+        element DETALLE {
+            itemfactura+
+        }+
+    }
+
+    itemfacturaremito = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro ,
+        precio ,
+        element DESCUENTO { xsd:decimal }
+    }
+
+    contenidofacturaremito = element CONTENIDO {
+        ## En el caso de Argentina debe indicarse el número completo
+        ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element FECHA_VTO { xsd:dateTime } ,
+        element TIPO_OPERACION { "FIRME" | "REPOSICION" | "FIRME_CON_DERECHO" } ,
+        ## Número de pedido o de liquidación de venta, según corresponda
+        element NUMERO_PEDIDO { text }? ,
+        element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
+        element TRANSPORTE { text }? ,
+        element OBSERVACIONES_ENTREGA { text }? ,
+        ## Total de la factura
+        element TOTAL {
+            moneda,
+            element VALOR { xsd:decimal }
+        },
+        element IMPUESTOS {
+            impuesto+
+        }?,
+        element DETALLE {
+            itemfacturaremito+
+        }+
+    }
+    contenidoliqvta = element CONTENIDO {
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element TIPO_LIQUIDACION { "VENTA_ENTRE_FECHAS" | "FALTANTE" } ? ,
+        element RANGO_DE_VENTAS {
+            element DESDE { xsd:dateTime },
+            element HASTA { xsd:dateTime }
+        }?,
         element DETALLE {
             librocantidadpreciooptativo+
         }+

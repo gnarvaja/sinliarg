@@ -15,6 +15,24 @@
         <ref name="destino"/>
         <ref name="contenidoremito"/>
       </element>
+      <element name="FACTURA">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidofactura"/>
+      </element>
+      <element name="LIQVTA">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidoliqvta"/>
+      </element>
+      <element name="FACREM">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidofacturaremito"/>
+      </element>
     </choice>
   </start>
   <define name="archivo">
@@ -39,6 +57,9 @@
         <choice>
           <value>PEDIDO</value>
           <value>REMITO</value>
+          <value>FACTURA</value>
+          <value>LIQVTA</value>
+          <value>FACREM</value>
         </choice>
       </element>
       <optional>
@@ -107,15 +128,18 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       <ref name="id_libro"/>
     </element>
   </define>
+  <define name="moneda">
+    <element name="MONEDA">
+      <choice>
+        <value>ARS</value>
+        <value>USD</value>
+        <value>EUR</value>
+      </choice>
+    </element>
+  </define>
   <define name="precio">
     <element name="PRECIO">
-      <element name="MONEDA">
-        <choice>
-          <value>ARS</value>
-          <value>USD</value>
-          <value>EUR</value>
-        </choice>
-      </element>
+      <ref name="moneda"/>
       <element name="VALOR">
         <data type="decimal"/>
       </element>
@@ -262,6 +286,231 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       <optional>
         <element name="OBSERVACIONES_ENTREGA">
           <text/>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="librocantidadpreciooptativo"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
+    </element>
+  </define>
+  <define name="impuesto">
+    <element name="IMPUESTO">
+      <element name="TIPO">
+        <choice>
+          <value>IVA</value>
+          <value>PERC_IIBB</value>
+          <value>PERC_IVA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="ALICUOTA">
+          <data type="decimal"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="BASE">
+          <a:documentation>Base sobre la que se calcula el importe, en el caso del IVA
+sería el NETO GRAVADO</a:documentation>
+          <data type="decimal"/>
+        </element>
+      </optional>
+      <element name="IMPORTE">
+        <data type="decimal"/>
+      </element>
+    </element>
+  </define>
+  <define name="referencia_a_remito">
+    <element name="ITEM">
+      <element name="NUMERO_REMITO">
+        <text/>
+      </element>
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+    </element>
+  </define>
+  <define name="itemfactura">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <ref name="precio"/>
+      <element name="DESCUENTO">
+        <data type="decimal"/>
+      </element>
+      <optional>
+        <element name="REMITOS">
+          <a:documentation>Detalle de los remitos a los que aplica el ítem de factura
+Si está indicado, la suma de las cantidades debe coincidir con la
+cantidad del ítem</a:documentation>
+          <oneOrMore>
+            <ref name="referencia_a_remito"/>
+          </oneOrMore>
+        </element>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidofactura">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <element name="FECHA_VTO">
+        <data type="dateTime"/>
+      </element>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>BAJA CONSIGNACION</value>
+          <value>FIRME_CON_DERECHO</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="NUMERO_PEDIDO">
+          <a:documentation>Número de pedido o de liquidación de venta, según corresponda</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_REMITO">
+          <a:documentation>Número de remito al que aplica la factura. Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <a:documentation>Total de la factura</a:documentation>
+        <ref name="moneda"/>
+        <element name="VALOR">
+          <data type="decimal"/>
+        </element>
+      </element>
+      <optional>
+        <element name="IMPUESTOS">
+          <oneOrMore>
+            <ref name="impuesto"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="itemfactura"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
+    </element>
+  </define>
+  <define name="itemfacturaremito">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <ref name="precio"/>
+      <element name="DESCUENTO">
+        <data type="decimal"/>
+      </element>
+    </element>
+  </define>
+  <define name="contenidofacturaremito">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <element name="FECHA_VTO">
+        <data type="dateTime"/>
+      </element>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>REPOSICION</value>
+          <value>FIRME_CON_DERECHO</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="NUMERO_PEDIDO">
+          <a:documentation>Número de pedido o de liquidación de venta, según corresponda</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="TIPO_ENTREGA">
+        <choice>
+          <value>ENVIO</value>
+          <value>RETIRA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="TRANSPORTE">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES_ENTREGA">
+          <text/>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <a:documentation>Total de la factura</a:documentation>
+        <ref name="moneda"/>
+        <element name="VALOR">
+          <data type="decimal"/>
+        </element>
+      </element>
+      <optional>
+        <element name="IMPUESTOS">
+          <oneOrMore>
+            <ref name="impuesto"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="itemfacturaremito"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
+    </element>
+  </define>
+  <define name="contenidoliqvta">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <optional>
+        <element name="TIPO_LIQUIDACION">
+          <choice>
+            <value>VENTA_ENTRE_FECHAS</value>
+            <value>FALTANTE</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="RANGO_DE_VENTAS">
+          <element name="DESDE">
+            <data type="dateTime"/>
+          </element>
+          <element name="HASTA">
+            <data type="dateTime"/>
+          </element>
         </element>
       </optional>
       <oneOrMore>
