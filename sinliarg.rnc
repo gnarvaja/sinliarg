@@ -4,8 +4,9 @@ grammar {
         element PEDIDO { archivo , origen , destino , contenidopedido } |
         element REMITO { archivo , origen , destino , contenidoremito } |
         element FACTURA { archivo , origen , destino , contenidofactura } |
-        element LIQVTA { archivo , origen , destino , contenidoliqvta } |
-        element FACREM { archivo , origen , destino , contenidofacturaremito }
+        element DECLAVENTA { archivo , origen , destino , contenidodeclaventa } |
+        element FACREM { archivo , origen , destino , contenidofacturaremito } |
+        element MENSAJE_GENERICO { archivo , origen , destino , contenidomensajegenerico }
     ## Informacion general del archivo/mensaje
     archivo = element ARCHIVO {
             ## Descripción en texto libre del contenido del archivo
@@ -13,7 +14,7 @@ grammar {
             element FECHA { xsd:dateTime } , # AAAA-MM-DDTHH:MM:SS
             element VERSION { "1.0" | "1.1" } ,
             ## Tipo de archivo/mensaje. Coincide con el elemento raíz
-            element CODIGO { "PEDIDO" | "REMITO" | "FACTURA" | "LIQVTA" | "FACREM" } ,
+            element CODIGO { "PEDIDO" | "REMITO" | "FACTURA" | "DECLAVENTA" | "FACREM" } ,
             ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
             ## si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
             ## como duplicados
@@ -95,8 +96,9 @@ grammar {
         element OBSERVACIONES_ENTREGA { text }? ,
         element DETALLE {
             librocantidadpreciooptativo+
-        }+
+        }
     }
+
     impuesto = element IMPUESTO {
         element TIPO { "IVA" | "PERC_IIBB" | "PERC_IVA" },
         element ALICUOTA { xsd:decimal }?,
@@ -121,7 +123,8 @@ grammar {
         ## cantidad del ítem
         element REMITOS {
             referencia_a_remito+
-        }?
+        }? ,
+        element TOTAL { xsd:decimal }
     }
 
     contenidofactura = element CONTENIDO {
@@ -130,10 +133,12 @@ grammar {
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,
-        element TIPO_OPERACION { "FIRME" | "BAJA CONSIGNACION" | "FIRME_CON_DERECHO" } ,
+        element TIPO_OPERACION { "FIRME" | "BAJA_CONSIGNACION" | "FIRME_CON_DERECHO" } ,
         ## Número de pedido o de liquidación de venta, según corresponda
+        ## si fuera contra varios pedidos, se separan los números con coma.
         element NUMERO_PEDIDO { text }? ,
-        ## Número de remito al que aplica la factura. Indicarlo implica que TODA la factura aplica a este remito.
+        ## Número de remito al que aplica la factura.
+        ## Indicarlo implica que TODA la factura aplica a este remito.
         element NUMERO_REMITO { text }? ,
         ## Total de la factura
         element TOTAL {
@@ -145,14 +150,15 @@ grammar {
         }?,
         element DETALLE {
             itemfactura+
-        }+
+        }
     }
 
     itemfacturaremito = element ITEM {
         element CANTIDAD { xsd:int } ,
         id_libro ,
         precio ,
-        element DESCUENTO { xsd:decimal }
+        element DESCUENTO { xsd:decimal } ,
+        element TOTAL { xsd:decimal }
     }
 
     contenidofacturaremito = element CONTENIDO {
@@ -177,18 +183,43 @@ grammar {
         }?,
         element DETALLE {
             itemfacturaremito+
-        }+
+        }
     }
-    contenidoliqvta = element CONTENIDO {
+    contenidodeclaventa = element CONTENIDO {
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
-        element TIPO_LIQUIDACION { "VENTA_ENTRE_FECHAS" | "FALTANTE" } ? ,
+        element TIPO_DECLARACION { "VENTA_ENTRE_FECHAS" | "DIFERENCIA_DE_STOCK" } ? ,
         element RANGO_DE_VENTAS {
             element DESDE { xsd:dateTime },
             element HASTA { xsd:dateTime }
         }?,
         element DETALLE {
+            attribute ID_SUCURSAL { text }?,
             librocantidadpreciooptativo+
         }+
+    }
+    contenidomensajegenerico = element CONTENIDO {
+        ## Tipos de mensajes:
+        ## * SOLICITUD_DEVOLUCION: desde el editor al librero. El editor solicita que
+        ##   le devuelvan determinados libros.
+        ## * SOLICITUD_RETIRO_DEVOLUCION: desde el librero al editor, que solicita
+        ##   que pasen a retirar un envío.
+        ## * RECEPCION_DEVOLUCION: desde el editor al librero, cuando el editor
+        ##   procesa la devolución. En este mensaje indica la cantidad de libros
+        ##   recibidos y en las observaciones detalla las NCs, Notas de devolución
+        ##   y si los hubiera, los rechazos.
+        ## * OTRO: para otros casos.
+        element TIPO_DE_MENSAJE { "SOLICITUD_DEVOLUCION" |
+            "SOLICITUD_RETIRO_DEVOLUCION" |
+            "RECEPCION_DEVOLUCION" |
+            "OTRO"
+        } ? ,
+        ## Número de remito en los casos en que aplica
+        element NUMERO_REMITO { text }?,
+        element OBSERVACIONES { text }?,
+        element DETALLE {
+            attribute ID_SUCURSAL { text }?,
+            librocantidadpreciooptativo+
+        }*
     }
 }

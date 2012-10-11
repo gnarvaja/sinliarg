@@ -21,17 +21,23 @@
         <ref name="destino"/>
         <ref name="contenidofactura"/>
       </element>
-      <element name="LIQVTA">
+      <element name="DECLAVENTA">
         <ref name="archivo"/>
         <ref name="origen"/>
         <ref name="destino"/>
-        <ref name="contenidoliqvta"/>
+        <ref name="contenidodeclaventa"/>
       </element>
       <element name="FACREM">
         <ref name="archivo"/>
         <ref name="origen"/>
         <ref name="destino"/>
         <ref name="contenidofacturaremito"/>
+      </element>
+      <element name="MENSAJE_GENERICO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidomensajegenerico"/>
       </element>
     </choice>
   </start>
@@ -58,7 +64,7 @@
           <value>PEDIDO</value>
           <value>REMITO</value>
           <value>FACTURA</value>
-          <value>LIQVTA</value>
+          <value>DECLAVENTA</value>
           <value>FACREM</value>
         </choice>
       </element>
@@ -288,13 +294,11 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
           <text/>
         </element>
       </optional>
-      <oneOrMore>
-        <element name="DETALLE">
-          <oneOrMore>
-            <ref name="librocantidadpreciooptativo"/>
-          </oneOrMore>
-        </element>
-      </oneOrMore>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="librocantidadpreciooptativo"/>
+        </oneOrMore>
+      </element>
     </element>
   </define>
   <define name="impuesto">
@@ -353,6 +357,9 @@ cantidad del ítem</a:documentation>
           </oneOrMore>
         </element>
       </optional>
+      <element name="TOTAL">
+        <data type="decimal"/>
+      </element>
     </element>
   </define>
   <define name="contenidofactura">
@@ -371,19 +378,21 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       <element name="TIPO_OPERACION">
         <choice>
           <value>FIRME</value>
-          <value>BAJA CONSIGNACION</value>
+          <value>BAJA_CONSIGNACION</value>
           <value>FIRME_CON_DERECHO</value>
         </choice>
       </element>
       <optional>
         <element name="NUMERO_PEDIDO">
-          <a:documentation>Número de pedido o de liquidación de venta, según corresponda</a:documentation>
+          <a:documentation>Número de pedido o de liquidación de venta, según corresponda
+si fuera contra varios pedidos, se separan los números con coma.</a:documentation>
           <text/>
         </element>
       </optional>
       <optional>
         <element name="NUMERO_REMITO">
-          <a:documentation>Número de remito al que aplica la factura. Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
+          <a:documentation>Número de remito al que aplica la factura.
+Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
           <text/>
         </element>
       </optional>
@@ -401,13 +410,11 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
           </oneOrMore>
         </element>
       </optional>
-      <oneOrMore>
-        <element name="DETALLE">
-          <oneOrMore>
-            <ref name="itemfactura"/>
-          </oneOrMore>
-        </element>
-      </oneOrMore>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="itemfactura"/>
+        </oneOrMore>
+      </element>
     </element>
   </define>
   <define name="itemfacturaremito">
@@ -418,6 +425,9 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       <ref name="id_libro"/>
       <ref name="precio"/>
       <element name="DESCUENTO">
+        <data type="decimal"/>
+      </element>
+      <element name="TOTAL">
         <data type="decimal"/>
       </element>
     </element>
@@ -478,16 +488,14 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
           </oneOrMore>
         </element>
       </optional>
-      <oneOrMore>
-        <element name="DETALLE">
-          <oneOrMore>
-            <ref name="itemfacturaremito"/>
-          </oneOrMore>
-        </element>
-      </oneOrMore>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="itemfacturaremito"/>
+        </oneOrMore>
+      </element>
     </element>
   </define>
-  <define name="contenidoliqvta">
+  <define name="contenidodeclaventa">
     <element name="CONTENIDO">
       <element name="NUMERO_DOCUMENTO">
         <text/>
@@ -496,10 +504,10 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
         <data type="dateTime"/>
       </element>
       <optional>
-        <element name="TIPO_LIQUIDACION">
+        <element name="TIPO_DECLARACION">
           <choice>
             <value>VENTA_ENTRE_FECHAS</value>
-            <value>FALTANTE</value>
+            <value>DIFERENCIA_DE_STOCK</value>
           </choice>
         </element>
       </optional>
@@ -515,11 +523,51 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       </optional>
       <oneOrMore>
         <element name="DETALLE">
+          <optional>
+            <attribute name="ID_SUCURSAL"/>
+          </optional>
           <oneOrMore>
             <ref name="librocantidadpreciooptativo"/>
           </oneOrMore>
         </element>
       </oneOrMore>
+    </element>
+  </define>
+  <define name="contenidomensajegenerico">
+    <element name="CONTENIDO">
+      <optional>
+        <element name="TIPO_DE_MENSAJE">
+          <a:documentation>Tipos de mensajes:
+* SOLICITUD_DEVOLUCION: desde el editor al librero. El editor solicita que
+  le devuelvan determinados libros.
+* SOLICITUD_RETIRO_DEVOLUCION: desde el librero al editor, que solicita
+  que pasen a retirar un envío.
+* RECEPCION_DEVOLUCION: desde el editor al librero, cuando el editor
+  procesa la devolución. En este mensaje indica la cantidad de libros
+  recibidos y en las observaciones detalla las NCs, Notas de devolución
+  y si los hubiera, los rechazos.
+* OTRO: para otros casos.</a:documentation>
+          <choice>
+            <value>SOLICITUD_DEVOLUCION</value>
+            <value>SOLICITUD_RETIRO_DEVOLUCION</value>
+            <value>RECEPCION_DEVOLUCION</value>
+            <value>OTRO</value>
+          </choice>
+        </element>
+      </optional>
+      <element name="OBSERVACIONES">
+        <text/>
+      </element>
+      <zeroOrMore>
+        <element name="DETALLE">
+          <optional>
+            <attribute name="ID_SUCURSAL"/>
+          </optional>
+          <oneOrMore>
+            <ref name="librocantidadpreciooptativo"/>
+          </oneOrMore>
+        </element>
+      </zeroOrMore>
     </element>
   </define>
 </grammar>
