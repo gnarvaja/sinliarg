@@ -89,7 +89,7 @@ grammar {
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
-        element NRO_PEDIDO { text }? ,
+        element NUMERO_PEDIDO { text }? ,
         element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
         element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
         element TRANSPORTE { text }? ,
@@ -130,6 +130,7 @@ grammar {
     contenidofactura = element CONTENIDO {
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element LETRA { "A" | "B" | "C" }? ,
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,
@@ -164,6 +165,7 @@ grammar {
     contenidofacturaremito = element CONTENIDO {
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element LETRA { "A" | "B" | "C" }? ,
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,

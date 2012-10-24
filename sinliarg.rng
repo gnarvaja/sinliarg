@@ -266,7 +266,7 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
         <data type="dateTime"/>
       </element>
       <optional>
-        <element name="NRO_PEDIDO">
+        <element name="NUMERO_PEDIDO">
           <text/>
         </element>
       </optional>
@@ -364,9 +364,18 @@ cantidad del ítem</a:documentation>
   </define>
   <define name="contenidofactura">
     <element name="CONTENIDO">
-      <element name="NUMERO_DOCUMENTO">
-        <a:documentation>En el caso de Argentina debe indicarse el número completo
+      <optional>
+        <element name="LETRA">
+          <a:documentation>En el caso de Argentina debe indicarse el número completo
 legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+          <choice>
+            <value>A</value>
+            <value>B</value>
+            <value>C</value>
+          </choice>
+        </element>
+      </optional>
+      <element name="NUMERO_DOCUMENTO">
         <text/>
       </element>
       <element name="FECHA">
@@ -434,9 +443,18 @@ Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
   </define>
   <define name="contenidofacturaremito">
     <element name="CONTENIDO">
-      <element name="NUMERO_DOCUMENTO">
-        <a:documentation>En el caso de Argentina debe indicarse el número completo
+      <optional>
+        <element name="LETRA">
+          <a:documentation>En el caso de Argentina debe indicarse el número completo
 legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+          <choice>
+            <value>A</value>
+            <value>B</value>
+            <value>C</value>
+          </choice>
+        </element>
+      </optional>
+      <element name="NUMERO_DOCUMENTO">
         <text/>
       </element>
       <element name="FECHA">
@@ -555,9 +573,17 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
           </choice>
         </element>
       </optional>
-      <element name="OBSERVACIONES">
-        <text/>
-      </element>
+      <optional>
+        <element name="NUMERO_REMITO">
+          <a:documentation>Número de remito en los casos en que aplica</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES">
+          <text/>
+        </element>
+      </optional>
       <zeroOrMore>
         <element name="DETALLE">
           <optional>
