@@ -3,6 +3,6 @@
     "sinli_email": "sinliilhsa@fierro-soft.com.ar",
     "email_pass": "nousanftp",
     "base_path": "",
-    "sinli_codes": "sinli_codes.csv",
+    "eaddress_file": "email_address.csv",
     "dir_re": "/L0002349_[A-Z][0-9]{7}$"
 }
