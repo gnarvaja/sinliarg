@@ -1,0 +1,8 @@
+{
+    "sinli_code": "L0002349",
+    "sinli_email": "sinliilhsa@fierro-soft.com.ar",
+    "email_pass": "nousanftp",
+    "base_path": "",
+    "sinli_codes": "sinli_codes.csv",
+    "dir_re": "/L0002349_[A-Z][0-9]{7}$"
+}
