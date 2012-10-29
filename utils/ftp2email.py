@@ -20,9 +20,10 @@ import xml.etree.cElementTree as cElementTree
 class SinliargMessage(object):
     """Mensaje de sinliarg"""
 
-    def __init__(self, msg_data):
+    def __init__(self, msg_data, filename=None):
         """
             :msg_data: datos del mensaje en formato XML
+            :filename: nombre del archivo para el XML del mensaje
         """
         self.xml = msg_data
         xmltree = cElementTree.parse(cStringIO.StringIO(self.xml))
@@ -40,8 +41,8 @@ class MessageChannel(object):
         """
         raise NotImplementedError
 
-    def get_message_data(self, msg_id):
-        """Devuelve el contenido del mensaje con id msg_id
+    def get_message(self, msg_id):
+        """Devuelve el mensaje con id msg_id
         """
         raise NotImplementedError
 
@@ -63,12 +64,15 @@ class FilesystemChannel(MessageChannel):
         self.base_path = os.path.abspath(base_path)
         self.dir_re = re.compile(dir_re)
 
-    def get_message_data(self, msg_id):
-        """Devuelve el contenido del mensaje msg_id
+    def __str__(self):
+        return 'FilesystemChannel(%s)' % self.base_path
+
+    def get_message(self, msg_id):
+        """Devuelve el mensaje msg_id
             :msg_id: el id del mensaje es el path al archivo con su contenido
         """
         with open(msg_id) as i:
-            return i.read()
+            return SinliargMessage(i.read(), filename=os.path.split(msg_id)[1])
 
     def load_messages(self):
         """Devuelve una lista con los nombres de archivo de los mensajes
@@ -120,6 +124,9 @@ class EmailChannel(MessageChannel):
         self.smtp_settings = smtp_settings
         self.msg_from = msg_from
         self.eaddress_file = eaddress_file
+
+    def __str__(self):
+        return 'EmailChannel(%s)' % self.msg_from
 
     def send_message(self, sinli_message):
         """Envia el mensaje al destinatario Sinliarg por email
@@ -178,6 +185,31 @@ class EmailChannel(MessageChannel):
         return '%s.xml' % '_'.join((message.sinli_type, message.src_code,
                                     message.dst_code, str(hash(message.xml))))
 
+def pipeChannels(src_channel, dst_channel):
+    """Enviar los mensajes de un canal a otro
+        :src_channel: canal de origen de los mensajes
+        :dst_channel: canal de destino de los mensajes
+    """
+    logging.info('Envio de mensajes %s->%s iniciado' % (src_channel, dst_channel))
+    for msg_id in src_channel.load_messages():
+        logging.info('Procesando mensaje id: %s' % msg_id)
+        try:
+            sinli_message = src_channel.get_message(msg_id)
+            logging.debug('...leido correctamente')
+        except Exception:
+            logging.error('Error obteniendo datos del mensaje\n%s' % traceback.format_exc())
+            continue
+
+        try:
+            logging.info('Enviando mensaje id: %s' % msg_id)
+            dst_channel.send_message(sinli_message)
+            logging.debug('...enviado correctamente')
+        except Exception:
+            logging.error('Error enviando mensaje\n%s' % traceback.format_exc())
+        else:
+            src_channel.mark_message(msg_id)
+    logging.info('Envio de mensajes %s->%s finalizado' % (src_channel, dst_channel))
+
 
 def __main__(argv=None):
     """Lee archivos desde un directorio
@@ -187,6 +219,7 @@ def __main__(argv=None):
     if argv is None:
         argv = sys.argv
 
+    # leer configuracion
     if len(argv) > 1:
         settings_filename = argv[1]
     else:
@@ -199,6 +232,7 @@ def __main__(argv=None):
         print 'Error abriendo archivo de configuracion: %s\n\n' % settings_filename
         raise
 
+    # configurar el log
     log_format = '%(asctime)s|%(levelname)s|%(message)s'
     if 'log_file' in settings:
         logging.basicConfig(filename=settings['log_file'], level=logging.DEBUG,
@@ -206,29 +240,13 @@ def __main__(argv=None):
     else:
         logging.basicConfig(level=logging.DEBUG, format=log_format)
 
-    srcChannel = FilesystemChannel(settings['base_path'], settings['dir_re'])
-    dstChannel = EmailChannel(smtp_settings=settings['smtp_settings'],
+    # intercambiar mensajes
+    files_channel = FilesystemChannel(settings['base_path'], settings['dir_re'])
+    email_channel = EmailChannel(smtp_settings=settings['smtp_settings'],
                               msg_from='testsinli@fierro-soft.com.ar',
                               eaddress_file=settings['eaddress_file'])
 
-    logging.info('Envio de mensajes FTP->Email iniciado')
-    for msg_id in srcChannel.load_messages():
-        logging.info('Procesando mensaje id: %s' % msg_id)
-        try:
-            msg_data = srcChannel.get_message_data(msg_id)
-            logging.debug('...leido correctamente')
-        except Exception:
-            logging.error('Error obteniendo datos del mensaje\n%s' % traceback.format_exc())
-
-        try:
-            logging.info('Enviando mensaje id: %s' % msg_id)
-            dstChannel.send_message(SinliargMessage(msg_data))
-            logging.debug('...enviado correctamente')
-        except Exception:
-            logging.error('Error enviando mensaje\n%s' % traceback.format_exc())
-        else:
-            srcChannel.mark_message(msg_id)
-    logging.info('Envio de mensajes FTP->Email finalizado')
+    pipeChannels(files_channel, email_channel)
 
     return 0
 

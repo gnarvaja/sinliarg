@@ -105,15 +105,19 @@ class FilesystemChannelTestCase(unittest.TestCase):
 
         self.assertListEqual(list(self.ch.load_messages()), espected_files)
 
-    def test_get_message_data(self):
+    @mock.patch('%s.ftp2email.SinliargMessage' % __name__)
+    def test_get_message(self, message_mock):
         """Verifica que se pueda cargar el contenido de un mensaje
         """
         msg_id = os.path.join(self.test_path, 'data/L0002349_E0000001/vacio.xml')
-        self.assertEqual(self.ch.get_message_data(msg_id), '')
+        self.ch.get_message(msg_id)
+        message_mock.assert_called_with('', filename='vacio.xml')
 
         msg_id = os.path.join(self.test_path,
                                 'data/L0002349_E0000001/REMFAA_L0002349_E0000001_517.xml')
-        self.assertEqual(self.ch.get_message_data(msg_id), open(msg_id).read())
+        self.ch.get_message(msg_id)
+        message_mock.assert_called_with(open(msg_id).read(),
+                                        filename='REMFAA_L0002349_E0000001_517.xml')
 
     @mock.patch('%s.ftp2email.shutil.move' % __name__)
     def test_mark_message(self, move_mock):
@@ -299,6 +303,34 @@ class EmailChannelTestCase(unittest.TestCase):
             self.assertEqual(smtpserver_mock.sendmail.call_count, 1)
             self.assertEqual(smtpserver_mock.close.call_count, 1)
 
+
+class PipeChannelsTestCase(unittest.TestCase):
+    """Test para la funcion que envia mensajes entre canales"""
+
+    def test_pipeChannels(self):
+        src_channel_mock = mock.Mock(create=True)
+        src_channel_mock.load_messages.return_value = (1, 2, 3)
+        src_channel_mock.get_message_data.return_value = """<?xml version="1.0" encoding="utf-8"?>
+                                                           <REMFAA>
+                                                             <ARCHIVO>
+                                                               <DESCRIPCION>mensaje sinliarg</DESCRIPCION>
+                                                               <CODIGO>REMFAA</CODIGO>
+                                                             </ARCHIVO>
+                                                             <ORIGEN>
+                                                               <CODIGO_SINLI>L0000001</CODIGO_SINLI>
+                                                             </ORIGEN>
+                                                             <DESTINO>
+                                                               <CODIGO_SINLI>E0000001</CODIGO_SINLI>
+                                                             </DESTINO>
+                                                           </REMFAA>"""
+        dst_channel_mock = mock.Mock(create=True)
+
+        ftp2email.pipeChannels(src_channel_mock, dst_channel_mock)
+        self.assertEqual(src_channel_mock.load_messages.call_count, 1)
+        self.assertEqual(src_channel_mock.get_message.call_count, 3)
+        src_channel_mock.get_message.assert_has_calls([mock.call(x) for x in (1, 2, 3)])
+        self.assertEqual(dst_channel_mock.send_message.call_count, 3)
+        src_channel_mock.mark_message.assert_has_calls([mock.call(x) for x in (1, 2, 3)])
 
 def main():
     unittest.main()
