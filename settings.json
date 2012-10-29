@@ -4,5 +4,10 @@
     "email_pass": "nousanftp",
     "base_path": "",
     "eaddress_file": "email_address.csv",
-    "dir_re": "/L0002349_[A-Z][0-9]{7}$"
+    "dir_re": "/L0002349_[A-Z][0-9]{7}$",
+    "smtp_settings": {
+        "host": "smtp.fierro-soft.com.ar",
+        "user": "facundo.casco@fierro-soft.com.ar",
+        "pass": "gensys"
+    }
 }
