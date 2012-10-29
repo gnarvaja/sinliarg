@@ -40,10 +40,17 @@ grammar {
             element ID_SUCURSAL { text }? ,
             element CODIGO_SINLI { text }
     }
+    observaciones = element OBSERVACIONES {
+        element ITEM {
+            element ASUNTO { text }?,
+            element CUERPO { text }
+        }+
+    }
     librocantidad = element ITEM {
         element CANTIDAD { xsd:int } ,
         id_libro
     }
+    letrafactura = element LETRA { "A" | "B" | "C" | "E" | "M" }
     moneda = element MONEDA { "ARS" | "USD" | "EUR" }
 
     precio = element PRECIO {
@@ -82,13 +89,16 @@ grammar {
             ## la sucursal indicada en la cabecera
             attribute ID_SUCURSAL { text }?,
             librocantidad+
-        }+
+        }+ ,
+        observaciones?
     }
     contenidoremito = element CONTENIDO {
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
+        ## Fecha de vencimiento del remito.
+        element FECHA_VTO { xsd:dateTime }? ,
         element NUMERO_PEDIDO { text }? ,
         element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
         element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
@@ -96,16 +106,23 @@ grammar {
         element OBSERVACIONES_ENTREGA { text }? ,
         element DETALLE {
             librocantidadpreciooptativo+
-        }
+        },
+        observaciones?
     }
 
     impuesto = element IMPUESTO {
-        element TIPO { "IVA" | "PERC_IIBB" | "PERC_IVA" },
+        element TIPO { "IVA" | "PERC_IIBB" | "PERC_IVA" | "BASE_RETENCION_IIBB" },
+        ## Provincia para la base de retencion iibb.
+        element PROVINCIA { text }?,
         element ALICUOTA { xsd:decimal }?,
         ## Base sobre la que se calcula el importe, en el caso del IVA
-        ## sería el NETO GRAVADO
+        ## sería el NETO GRAVADO.
+        ## En el caso de la BASE_RETENCION_IIBB la suma de las bases
+        ## no incluyen otros impuestos
         element BASE { xsd:decimal }?,
-        element IMPORTE {xsd:decimal }
+        ## En el caso de BASE_RETENCION_IIBB, que es solo informativo
+        ## el importe sería cero.
+        element IMPORTE {xsd:decimal }?
     }
 
     referencia_a_remito = element ITEM {
@@ -128,20 +145,22 @@ grammar {
     }
 
     contenidofactura = element CONTENIDO {
+        letrafactura? ,
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
-        element LETRA { "A" | "B" | "C" }? ,
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,
         element TIPO_OPERACION { "FIRME" | "BAJA_CONSIGNACION" | "FIRME_CON_DERECHO" } ,
         ## Número de pedido o de liquidación de venta, según corresponda
-        ## si fuera contra varios pedidos, se separan los números con coma.
+        ## si fuera contra varios pedidos, se separan los números con
+        ## coma
         element NUMERO_PEDIDO { text }? ,
+        element NUMERO_DECLAVENTA { text }? ,
         ## Número de remito al que aplica la factura.
         ## Indicarlo implica que TODA la factura aplica a este remito.
         element NUMERO_REMITO { text }? ,
-        ## Total de la factura
+        ## Total de la factura - Incluye impuestos
         element TOTAL {
             moneda,
             element VALOR { xsd:decimal }
@@ -151,7 +170,8 @@ grammar {
         }?,
         element DETALLE {
             itemfactura+
-        }
+        },
+        observaciones?
     }
 
     itemfacturaremito = element ITEM {
@@ -165,12 +185,12 @@ grammar {
     contenidofacturaremito = element CONTENIDO {
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
-        element LETRA { "A" | "B" | "C" }? ,
+        letrafactura? ,
         element NUMERO_DOCUMENTO { text } ,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,
         element TIPO_OPERACION { "FIRME" | "REPOSICION" | "FIRME_CON_DERECHO" } ,
-        ## Número de pedido o de liquidación de venta, según corresponda
+        ## Número de pedido
         element NUMERO_PEDIDO { text }? ,
         element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
         element TRANSPORTE { text }? ,
@@ -185,7 +205,8 @@ grammar {
         }?,
         element DETALLE {
             itemfacturaremito+
-        }
+        },
+        observaciones?
     }
     contenidodeclaventa = element CONTENIDO {
         element NUMERO_DOCUMENTO { text } ,
@@ -196,16 +217,25 @@ grammar {
             element HASTA { xsd:dateTime }
         }?,
         element DETALLE {
-            attribute ID_SUCURSAL { text }?,
             librocantidadpreciooptativo+
-        }+
+        }+,
+        ## En este punto se indica la distribución impositiva
+        ## para la base imponible de retención. Es solo indicativo
+        ## para aquellos proveedores que no cuenten con esta
+        ## información en su sistema.
+        element IMPUESTOS {
+            impuesto+
+        }?,
+        observaciones?
     }
     contenidomensajegenerico = element CONTENIDO {
         ## Tipos de mensajes:
-        ## * SOLICITUD_DEVOLUCION: desde el editor al librero. El editor solicita que
-        ##   le devuelvan determinados libros.
-        ## * SOLICITUD_RETIRO_DEVOLUCION: desde el librero al editor, que solicita
-        ##   que pasen a retirar un envío.
+        ## * SOLICITUD_DEVOLUCION: desde el editor al librero.
+        ##   El editor solicita que le devuelvan determinados libros.
+        ## * SOLICITUD_RETIRO_DEVOLUCION: desde el librero al editor,
+        ##   que solicita que pasen a retirar una devolución.
+        ## * RETIRO_DEVOLUCION: desde el librero al editor,
+        ##   que informa que la devolución fue retirada.
         ## * RECEPCION_DEVOLUCION: desde el editor al librero, cuando el editor
         ##   procesa la devolución. En este mensaje indica la cantidad de libros
         ##   recibidos y en las observaciones detalla las NCs, Notas de devolución
@@ -218,10 +248,10 @@ grammar {
         } ? ,
         ## Número de remito en los casos en que aplica
         element NUMERO_REMITO { text }?,
-        element OBSERVACIONES { text }?,
         element DETALLE {
             attribute ID_SUCURSAL { text }?,
             librocantidadpreciooptativo+
-        }*
+        }*,
+        observaciones?
     }
 }
