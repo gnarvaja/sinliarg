@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf-8 :
 
+import argparse
 import cStringIO
 import csv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.parser import Parser as emailParser
 import errno
 import json
 import logging
 import os
+import poplib
 import re
 import shutil
 import smtplib
@@ -23,7 +26,7 @@ class SinliargMessage(object):
     def __init__(self, msg_data, filename=None):
         """
             :msg_data: datos del mensaje en formato XML
-            :filename: nombre del archivo para el XML del mensaje
+            :filename: nombre del archivo que contiene el XML del mensaje
         """
         self.xml = msg_data
         xmltree = cElementTree.parse(cStringIO.StringIO(self.xml))
@@ -31,6 +34,13 @@ class SinliargMessage(object):
         self.src_code = xmltree.findtext('ORIGEN/CODIGO_SINLI')
         self.description = xmltree.findtext('ARCHIVO/DESCRIPCION')
         self.sinli_type = xmltree.findtext('ARCHIVO/CODIGO')
+        self.filename = filename or self.gen_file_name()
+
+    def gen_file_name(self):
+        """Genera un nombre para el archivo que guardaria los datos del mensaje
+        """
+        return '_'.join([self.src_code, self.dst_code, self.sinli_type,
+                         str(hash(self.xml))]) + '.xml'
 
 
 class MessageChannel(object):
@@ -46,10 +56,15 @@ class MessageChannel(object):
         """
         raise NotImplementedError
 
-    def send_message(self, msg_data):
-        """:msg_data: datos del mensaje a enviar
+    def send_message(self, sinli_msg):
+        """:sinli_msg: mensaje sinliarg a enviar
         """
         raise NotImplementedError
+
+    def close(self):
+        """Libera los recursos usados para leer los mensajes
+        """
+        pass
 
 
 class FilesystemChannel(MessageChannel):
@@ -110,18 +125,51 @@ class FilesystemChannel(MessageChannel):
             else:
                 raise
 
+    def send_message(self, message):
+        """Guarda el mensaje en el sistema de archivos
+            :message: mensaje de sinliarg
+        """
+        dst_dir = '_'.join([message.src_code, message.dst_code])
+        dst_path = None
+        for path, dirs, files in os.walk(self.base_path):
+            if dst_dir in path:
+                dst_path = path
+                break
+
+        if dst_path is None:
+            raise Exception('No existe el directorio %s para guardar el mensaje'
+                                % dst_dir)
+
+        file_path = os.path.join(dst_path, message.sinli_type, message.filename)
+        try:
+            dst_file = open(file_path, 'w')
+        except IOError, e:      # si no existia el directorio intenta crearlo
+            if e.errno == errno.ENOENT:
+                os.makedirs(os.path.join(dst_path, message.sinli_type))
+                dst_file = open(file_path, 'w')
+            else:
+                raise
+
+        dst_file.write(message.xml)
+        dst_file.close()
+        return file_path
+
 
 class EmailChannel(MessageChannel):
     """Canal de intercambio de mensajes por email"""
+    sinliMimeTypes = ['text/xml', 'application/xml']
 
-    def __init__(self, smtp_settings, msg_from='', eaddress_file=None):
+    def __init__(self, smtp_settings, pop_settings, msg_from='', eaddress_file=None):
         """
-            :smtp_settings: dict de configuracio del servidor smtp
+            :smtp_settings: dict de configuracion del servidor smtp
+                            {'host': '', 'port': '', 'user': '', 'pass': ''}
+            :pop_settings: dict de configuracion del servidor pop
                             {'host': '', 'port': '', 'user': '', 'pass': ''}
             :msg_from: valor que identifica el origen de los emails enviados
             :eaddress_file: nombre del archivo con codigo sinli, direccion de email (csv)
         """
         self.smtp_settings = smtp_settings
+        self.pop_settings = pop_settings
         self.msg_from = msg_from
         self.eaddress_file = eaddress_file
 
@@ -141,7 +189,7 @@ class EmailChannel(MessageChannel):
         new_email.attach(MIMEText(self.gen_email_body(sinli_message)))
         xml_attach = MIMEText(sinli_message.xml, 'xml', 'utf-8')
         xml_attach['Content-disposition'] = 'attachment; filename="%s"' \
-                                                % self.gen_filename(sinli_message)
+                                                % sinli_message.filename
         new_email.attach(xml_attach)
 
         # conectar con el servidor y hacer en envio
@@ -179,11 +227,75 @@ class EmailChannel(MessageChannel):
         """
         return message.description or 'Mensaje sinliarg adjunto'
 
-    def gen_filename(self, message):
-        """Genera un nombre de archivo para el contenido del mensaje
+    def get_pop_server(self):
+        """Inicia una conexión con el servidor pop
         """
-        return '%s.xml' % '_'.join((message.sinli_type, message.src_code,
-                                    message.dst_code, str(hash(message.xml))))
+        logging.debug('Iniciando conexion con servidor pop3 %s:%s'
+                        % (self.pop_settings['host'], self.pop_settings['port']))
+        pop_server = poplib.POP3(self.pop_settings['host'],
+                                 port=self.pop_settings['port'] or 110)
+        pop_server.user(self.pop_settings['user'])
+        pop_server.pass_(self.pop_settings['pass'])
+        return pop_server
+
+    def is_sinliarg(self, email):
+        """Determina si un email contiene un mensaje Sinliarg
+        """
+        return bool('sinliarg' in email.get('subject', '').lower()
+                    and len([x for x in email.walk()
+                            if x.get_content_type() in self.sinliMimeTypes]) == 1)
+
+    def load_messages(self):
+        """Busca los mensajes en el servidor pop
+        """
+        pop_server = self.get_pop_server()
+        email_parser = emailParser()
+        self.messages = {}
+
+        for email_ids in pop_server.uidl()[1]:
+            email_nro, email_uid = email_ids.split(' ')
+            try:
+                email = email_parser.parsestr(pop_server.retr(email_nro))
+            except Exception:
+                logging.error('Error leyendo email uid: %s\n%s' % (email_uid, traceback.format_exc()))
+                continue
+            logging.info('Leyendo email asunto: %s' % email.get('subject', None))
+            if self.is_sinliarg(email):
+                logging.debug('  email sinliarg reconocido')
+                self.messages[email_uid] = email
+
+        pop_server.quit()
+        return self.messages.keys()
+
+    def get_message(self, msg_id):
+        """Devuelve el mensaje msg_id
+            :msg_id: el id del mensaje es el path al archivo con su contenido
+        """
+        if msg_id not in self.messages:
+            raise Exception('El mensaje id:%s no fue leido' % msg_id)
+
+        email_part = [x for x in self.messages[msg_id].walk()
+                        if x.get_content_type() in self.sinliMimeTypes][0]
+
+        message_data = email_part.get_payload(decode=True)
+        if not message_data.startswith('<?'):       # para leer mensajes con registro SINLI
+            message_data = message_data[message_data.find('<?'):]
+
+        return SinliargMessage(message_data, filename=email_part.get_filename())
+
+    def mark_message(self, msg_id):
+        """Marca un mensaje como procesado/leido
+            Elimina el email del servidor pop
+            :msg_id: uid del email
+        """
+        pop_server = self.get_pop_server()
+        for email_ids in pop_server.uidl()[1]:
+            email_nro, email_uid = email_ids.split(' ')
+            if email_uid == msg_id:
+                pop_server.dele(email_nro)
+                break
+        pop_server.quit()
+
 
 def pipeChannels(src_channel, dst_channel):
     """Enviar los mensajes de un canal a otro
@@ -208,6 +320,7 @@ def pipeChannels(src_channel, dst_channel):
             logging.error('Error enviando mensaje\n%s' % traceback.format_exc())
         else:
             src_channel.mark_message(msg_id)
+    src_channel.close()
     logging.info('Envio de mensajes %s->%s finalizado' % (src_channel, dst_channel))
 
 
@@ -216,20 +329,23 @@ def __main__(argv=None):
         Por cada archivo envia un email de sinli
         Despues de enviar el email mueve el archivo a otro directorio
     """
-    if argv is None:
-        argv = sys.argv
 
-    # leer configuracion
-    if len(argv) > 1:
-        settings_filename = argv[1]
-    else:
-        settings_filename = 'settings.json'
+    arg_parser = argparse.ArgumentParser(description='Enviar mensajes sinliarg entre distintos canales')
+    arg_parser.add_argument('-i', '--input', required=True,
+                            choices=('files', 'emails'),
+                            help='Canal de entrada (files|email)')
+    arg_parser.add_argument('-o', '--output', required=True,
+                            choices=('files', 'emails'),
+                            help='Canal de salida (files|email)')
+    arg_parser.add_argument('-s', '--settings', default='settings.json',
+                            help='Archivo de configuración')
+    args = arg_parser.parse_args(argv)
 
     try:
-        with open(settings_filename) as i:
+        with open(args.settings) as i:
             settings = json.load(i)
     except Exception:
-        print 'Error abriendo archivo de configuracion: %s\n\n' % settings_filename
+        print 'Error abriendo archivo de configuracion: %s\n\n' % args.settings
         raise
 
     # configurar el log
@@ -241,12 +357,17 @@ def __main__(argv=None):
         logging.basicConfig(level=logging.DEBUG, format=log_format)
 
     # intercambiar mensajes
-    files_channel = FilesystemChannel(settings['base_path'], settings['dir_re'])
-    email_channel = EmailChannel(smtp_settings=settings['smtp_settings'],
-                              msg_from='testsinli@fierro-soft.com.ar',
-                              eaddress_file=settings['eaddress_file'])
+    channels_map = {'files': lambda:
+                        FilesystemChannel(settings['base_path'], settings['dir_re']),
+                    'emails': lambda:
+                        EmailChannel(smtp_settings=settings['smtp_settings'],
+                                    pop_settings=settings['pop_settings'],
+                                    msg_from='testsinli@fierro-soft.com.ar',
+                                    eaddress_file=settings['eaddress_file'])}
 
-    pipeChannels(files_channel, email_channel)
+    input_channel = channels_map[args.input]()
+    output_channel = channels_map[args.output]()
+    pipeChannels(input_channel, output_channel)
 
     return 0
 

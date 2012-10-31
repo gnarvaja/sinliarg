@@ -9,5 +9,10 @@
         "host": "smtp.fierro-soft.com.ar",
         "user": "facundo.casco@fierro-soft.com.ar",
         "pass": "gensys"
+    },
+    "pop_settings": {
+        "host": "mail.fierro-soft.com.ar",
+        "user": "testsinli@fierro-soft.com.ar",
+        "pass": "sinli"
     }
 }
