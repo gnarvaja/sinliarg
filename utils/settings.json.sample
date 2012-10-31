@@ -1,0 +1,18 @@
+{
+    "sinli_code": "L0002349",
+    "sinli_email": "sinliilhsa@fierro-soft.com.ar",
+    "email_pass": "XXXXXXXX",
+    "base_path": "/home/facundo/tmp/data",
+    "eaddress_file": "email_address.csv",
+    "dir_re": "/L0002349_[A-Z][0-9]{7}$",
+    "smtp_settings": {
+        "host": "smtp.fierro-soft.com.ar",
+        "user": "aaaaaaaa@fierro-soft.com.ar",
+        "pass": "xxxxxxx"
+    },
+    "pop_settings": {
+        "host": "mail.fierro-soft.com.ar",
+        "user": "testsinli@fierro-soft.com.ar",
+        "pass": "xxxxxx"
+    }
+}

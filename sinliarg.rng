@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Gramática en formato RELAX-NG de los mensajes SINLI-Argentina -->
+<grammar xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0" xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <start>
+    <choice>
+      <element name="PEDIDO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidopedido"/>
+      </element>
+      <element name="REMITO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidoremito"/>
+      </element>
+      <element name="FACTURA">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidofactura"/>
+      </element>
+      <element name="DECLAVENTA">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidodeclaventa"/>
+      </element>
+      <element name="FACREM">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidofacturaremito"/>
+      </element>
+      <element name="MENSAJE_GENERICO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidomensajegenerico"/>
+      </element>
+    </choice>
+  </start>
+  <define name="archivo">
+    <a:documentation>Informacion general del archivo/mensaje</a:documentation>
+    <element name="ARCHIVO">
+      <element name="DESCRIPCION">
+        <a:documentation>Descripción en texto libre del contenido del archivo</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <!-- AAAA-MM-DDTHH:MM:SS -->
+      <element name="VERSION">
+        <choice>
+          <value>1.0</value>
+          <value>1.1</value>
+        </choice>
+      </element>
+      <element name="CODIGO">
+        <a:documentation>Tipo de archivo/mensaje. Coincide con el elemento raíz</a:documentation>
+        <choice>
+          <value>PEDIDO</value>
+          <value>REMITO</value>
+          <value>FACTURA</value>
+          <value>DECLAVENTA</value>
+          <value>FACREM</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="IDENTIFICADOR">
+          <a:documentation>Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
+si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
+como duplicados</a:documentation>
+          <text/>
+        </element>
+      </optional>
+    </element>
+  </define>
+  <define name="origen">
+    <a:documentation>Información del remitente</a:documentation>
+    <element name="ORIGEN">
+      <element name="NOMBRE">
+        <text/>
+      </element>
+      <optional>
+        <element name="ID_FISCAL">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="ID_SUCURSAL">
+          <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+  1. PEDIDO, cuando no se indica en el campo "DETALLE"</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="CODIGO_SINLI">
+        <text/>
+      </element>
+    </element>
+  </define>
+  <define name="destino">
+    <a:documentation>Información del destinatario</a:documentation>
+    <element name="DESTINO">
+      <element name="NOMBRE">
+        <text/>
+      </element>
+      <optional>
+        <element name="ID_FISCAL">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="ID_SUCURSAL">
+          <a:documentation>Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+  1. REMITO</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="CODIGO_SINLI">
+        <text/>
+      </element>
+    </element>
+  </define>
+  <define name="observaciones">
+    <element name="OBSERVACIONES">
+      <oneOrMore>
+        <element name="ITEM">
+          <optional>
+            <element name="ASUNTO">
+              <text/>
+            </element>
+          </optional>
+          <element name="CUERPO">
+            <text/>
+          </element>
+        </element>
+      </oneOrMore>
+    </element>
+  </define>
+  <define name="librocantidad">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+    </element>
+  </define>
+  <define name="letrafactura">
+    <element name="LETRA">
+      <choice>
+        <value>A</value>
+        <value>B</value>
+        <value>C</value>
+        <value>E</value>
+        <value>M</value>
+      </choice>
+    </element>
+  </define>
+  <define name="moneda">
+    <element name="MONEDA">
+      <choice>
+        <value>ARS</value>
+        <value>USD</value>
+        <value>EUR</value>
+      </choice>
+    </element>
+  </define>
+  <define name="precio">
+    <element name="PRECIO">
+      <ref name="moneda"/>
+      <element name="VALOR">
+        <data type="decimal"/>
+      </element>
+      <element name="TIPO">
+        <choice>
+          <value>PVP</value>
+          <value>NETO</value>
+        </choice>
+      </element>
+    </element>
+  </define>
+  <define name="librocantidadpreciooptativo">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <optional>
+        <ref name="precio"/>
+      </optional>
+    </element>
+  </define>
+  <define name="id_libro">
+    <element name="ID_LIBRO">
+      <element name="EAN">
+        <a:documentation>Se deben tratar de completar la mayor cantidad de códigos
+posibles, para facilitar al receptor resolver ambigüedades</a:documentation>
+        <text/>
+      </element>
+      <optional>
+        <element name="ISBN_13">
+          <a:documentation>ISBN_13 con o sin guiones, de ser posible, con guiones</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="ISBN_10">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="COD_ARTICULO">
+          <a:documentation>Es el código interno con el que la EDITORIAL (o PROVEEDOR),
+se refiere al libro.</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="TITULO">
+          <text/>
+        </element>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidopedido">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>CONSIGNACION</value>
+          <value>FIRME_CON_DERECHO</value>
+          <value>DONACION</value>
+        </choice>
+      </element>
+      <element name="TIPO_ENTREGA">
+        <choice>
+          <value>ENVIO</value>
+          <value>RETIRA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="TRANSPORTE">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="PAGA_EN">
+          <choice>
+            <value>ORIGEN</value>
+            <value>DESTINO</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES_ENTREGA">
+          <text/>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <optional>
+            <attribute name="ID_SUCURSAL">
+              <a:documentation>Sucursal a la que corresponde el pedido. Si no está presente se considera
+la sucursal indicada en la cabecera</a:documentation>
+            </attribute>
+          </optional>
+          <oneOrMore>
+            <ref name="librocantidad"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidoremito">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <optional>
+        <element name="FECHA_VTO">
+          <a:documentation>Fecha de vencimiento del remito.</a:documentation>
+          <data type="dateTime"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_PEDIDO">
+          <text/>
+        </element>
+      </optional>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>CONSIGNACION</value>
+          <value>FIRME_CON_DERECHO</value>
+          <value>DONACION</value>
+        </choice>
+      </element>
+      <element name="TIPO_ENTREGA">
+        <choice>
+          <value>ENVIO</value>
+          <value>RETIRA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="TRANSPORTE">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES_ENTREGA">
+          <text/>
+        </element>
+      </optional>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="librocantidadpreciooptativo"/>
+        </oneOrMore>
+      </element>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="impuesto">
+    <element name="IMPUESTO">
+      <element name="TIPO">
+        <choice>
+          <value>IVA</value>
+          <value>PERC_IIBB</value>
+          <value>PERC_IVA</value>
+          <value>BASE_RETENCION_IIBB</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="PROVINCIA">
+          <a:documentation>Provincia para la base de retencion iibb.</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="ALICUOTA">
+          <data type="decimal"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="BASE">
+          <a:documentation>Base sobre la que se calcula el importe, en el caso del IVA
+sería el NETO GRAVADO.
+En el caso de la BASE_RETENCION_IIBB la suma de las bases
+no incluyen otros impuestos</a:documentation>
+          <data type="decimal"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="IMPORTE">
+          <a:documentation>En el caso de BASE_RETENCION_IIBB, que es solo informativo
+el importe sería cero.</a:documentation>
+          <data type="decimal"/>
+        </element>
+      </optional>
+    </element>
+  </define>
+  <define name="referencia_a_remito">
+    <element name="ITEM">
+      <element name="NUMERO_REMITO">
+        <text/>
+      </element>
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+    </element>
+  </define>
+  <define name="itemfactura">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <ref name="precio"/>
+      <element name="DESCUENTO">
+        <data type="decimal"/>
+      </element>
+      <optional>
+        <element name="REMITOS">
+          <a:documentation>Detalle de los remitos a los que aplica el ítem de factura
+Si está indicado, la suma de las cantidades debe coincidir con la
+cantidad del ítem</a:documentation>
+          <oneOrMore>
+            <ref name="referencia_a_remito"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <data type="decimal"/>
+      </element>
+    </element>
+  </define>
+  <define name="contenidofactura">
+    <element name="CONTENIDO">
+      <optional>
+        <ref name="letrafactura"/>
+      </optional>
+      <element name="NUMERO_DOCUMENTO">
+        <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <element name="FECHA_VTO">
+        <data type="dateTime"/>
+      </element>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>BAJA_CONSIGNACION</value>
+          <value>FIRME_CON_DERECHO</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="NUMERO_PEDIDO">
+          <a:documentation>Número de pedido o de liquidación de venta, según corresponda
+si fuera contra varios pedidos, se separan los números con
+coma</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_DECLAVENTA">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_REMITO">
+          <a:documentation>Número de remito al que aplica la factura.
+Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <a:documentation>Total de la factura - Incluye impuestos</a:documentation>
+        <ref name="moneda"/>
+        <element name="VALOR">
+          <data type="decimal"/>
+        </element>
+      </element>
+      <optional>
+        <element name="IMPUESTOS">
+          <oneOrMore>
+            <ref name="impuesto"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="itemfactura"/>
+        </oneOrMore>
+      </element>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="itemfacturaremito">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <ref name="precio"/>
+      <element name="DESCUENTO">
+        <data type="decimal"/>
+      </element>
+      <element name="TOTAL">
+        <data type="decimal"/>
+      </element>
+    </element>
+  </define>
+  <define name="contenidofacturaremito">
+    <element name="CONTENIDO">
+      <optional>
+        <ref name="letrafactura">
+          <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        </ref>
+      </optional>
+      <element name="NUMERO_DOCUMENTO">
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <element name="FECHA_VTO">
+        <data type="dateTime"/>
+      </element>
+      <element name="TIPO_OPERACION">
+        <choice>
+          <value>FIRME</value>
+          <value>REPOSICION</value>
+          <value>FIRME_CON_DERECHO</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="NUMERO_PEDIDO">
+          <a:documentation>Número de pedido</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="TIPO_ENTREGA">
+        <choice>
+          <value>ENVIO</value>
+          <value>RETIRA</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="TRANSPORTE">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="OBSERVACIONES_ENTREGA">
+          <text/>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <a:documentation>Total de la factura</a:documentation>
+        <ref name="moneda"/>
+        <element name="VALOR">
+          <data type="decimal"/>
+        </element>
+      </element>
+      <optional>
+        <element name="IMPUESTOS">
+          <oneOrMore>
+            <ref name="impuesto"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="itemfacturaremito"/>
+        </oneOrMore>
+      </element>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidodeclaventa">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <optional>
+        <element name="TIPO_DECLARACION">
+          <choice>
+            <value>VENTA_ENTRE_FECHAS</value>
+            <value>DIFERENCIA_DE_STOCK</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="RANGO_DE_VENTAS">
+          <element name="DESDE">
+            <data type="dateTime"/>
+          </element>
+          <element name="HASTA">
+            <data type="dateTime"/>
+          </element>
+        </element>
+      </optional>
+      <oneOrMore>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="librocantidadpreciooptativo"/>
+          </oneOrMore>
+        </element>
+      </oneOrMore>
+      <optional>
+        <element name="IMPUESTOS">
+          <a:documentation>En este punto se indica la distribución impositiva
+para la base imponible de retención. Es solo indicativo
+para aquellos proveedores que no cuenten con esta
+información en su sistema.</a:documentation>
+          <oneOrMore>
+            <ref name="impuesto"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidomensajegenerico">
+    <element name="CONTENIDO">
+      <optional>
+        <element name="TIPO_DE_MENSAJE">
+          <a:documentation>Tipos de mensajes:
+* SOLICITUD_DEVOLUCION: desde el editor al librero.
+  El editor solicita que le devuelvan determinados libros.
+* SOLICITUD_RETIRO_DEVOLUCION: desde el librero al editor,
+  que solicita que pasen a retirar una devolución.
+* RETIRO_DEVOLUCION: desde el librero al editor,
+  que informa que la devolución fue retirada.
+* RECEPCION_DEVOLUCION: desde el editor al librero, cuando el editor
+  procesa la devolución. En este mensaje indica la cantidad de libros
+  recibidos y en las observaciones detalla las NCs, Notas de devolución
+  y si los hubiera, los rechazos.
+* OTRO: para otros casos.</a:documentation>
+          <choice>
+            <value>SOLICITUD_DEVOLUCION</value>
+            <value>SOLICITUD_RETIRO_DEVOLUCION</value>
+            <value>RECEPCION_DEVOLUCION</value>
+            <value>OTRO</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_REMITO">
+          <a:documentation>Número de remito en los casos en que aplica</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <zeroOrMore>
+        <element name="DETALLE">
+          <optional>
+            <attribute name="ID_SUCURSAL"/>
+          </optional>
+          <oneOrMore>
+            <ref name="librocantidadpreciooptativo"/>
+          </oneOrMore>
+        </element>
+      </zeroOrMore>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+</grammar>
