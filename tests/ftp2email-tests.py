@@ -368,8 +368,9 @@ class EmailChannelTestCase(unittest.TestCase):
 
         # con un email sinliarg
         with open(os.path.join(self.test_path, 'email_sinliarg')) as i:
-            email_sinliarg = i.read()
-        pop3srv.retr = mock.Mock(wraps=lambda uid: {'1': email_sinliarg, '2': ''}[uid])
+            email_sinliarg = i.read().splitlines()
+        pop3srv.retr = mock.Mock(wraps=lambda uid: {'1': ('+OK', email_sinliarg, 1),
+                                                    '2': ''}[uid])
         self.assertEqual(len(self.ch.load_messages()), 1)
 
         # sin ningun email
@@ -378,15 +379,38 @@ class EmailChannelTestCase(unittest.TestCase):
         self.assertEqual(len(self.ch.load_messages()), 0)
         self.assertTrue(not pop3srv.retr.called)
 
-    @unittest.skip('.')
     def test_get_message(self):
-        pass
+        """Verifica que devuelva el mensaje cargado
+        """
+        # cuando el mensaje no fue leido levanta una excepcion
+        self.assertRaises(Exception, self.ch.get_message, '00000010506477be')
 
-    @unittest.skip('.')
-    def test_mark_message(self):
+        # devuelve el mensaje
+        with open(os.path.join(self.test_path, 'email_sinliarg')) as i:
+                email = emailParser().parse(i)
+        self.ch.messages = {'00000010506477be': email}
+
+        m = self.ch.get_message('00000010506477be')
+        self.assertTrue(isinstance(m, ftp2email.SinliargMessage))
+
+    @mock.patch('%s.ftp2email.poplib.POP3' % __name__, autospec=True)
+    def test_mark_message(self, pop3_mock):
         """Verifica que se marque el mensaje como leido
         """
-        pass
+        pop3srv = pop3_mock.return_value
+        pop3srv.uidl.return_value = ('+OK', ['1 00000010506477be', '2 00000011506477be'],
+                                        40)
+        self.assertTrue(self.ch.mark_message('00000010506477be'))
+        pop3srv.dele.assert_called_once_with('1')
+        pop3srv.quit.assert_called_once_with()
+
+        pop3srv.dele.reset_mock()
+        self.assertTrue(self.ch.mark_message('00000011506477be'))
+        pop3srv.dele.assert_called_once_with('2')
+
+        pop3srv.dele.reset_mock()
+        self.assertTrue(not self.ch.mark_message('99900011506477be'))
+        self.assertTrue(not pop3srv.dele.called)
 
 
 class PipeChannelsTestCase(unittest.TestCase):
