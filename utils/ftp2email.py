@@ -371,7 +371,7 @@ def __main__(argv=None):
                     'emails': lambda:
                         EmailChannel(smtp_settings=settings['smtp_settings'],
                                     pop_settings=settings['pop_settings'],
-                                    msg_from='testsinli@fierro-soft.com.ar',
+                                    msg_from=settings["sinli_email"],
                                     eaddress_file=settings['eaddress_file'])}
 
     input_channel = channels_map[args.input]()
