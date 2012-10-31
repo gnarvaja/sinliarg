@@ -1,0 +1,257 @@
+# Gramática en formato RELAX-NG de los mensajes SINLI-Argentina
+grammar {
+    start =
+        element PEDIDO { archivo , origen , destino , contenidopedido } |
+        element REMITO { archivo , origen , destino , contenidoremito } |
+        element FACTURA { archivo , origen , destino , contenidofactura } |
+        element DECLAVENTA { archivo , origen , destino , contenidodeclaventa } |
+        element FACREM { archivo , origen , destino , contenidofacturaremito } |
+        element MENSAJE_GENERICO { archivo , origen , destino , contenidomensajegenerico }
+    ## Informacion general del archivo/mensaje
+    archivo = element ARCHIVO {
+            ## Descripción en texto libre del contenido del archivo
+            element DESCRIPCION { text } ,
+            element FECHA { xsd:dateTime } , # AAAA-MM-DDTHH:MM:SS
+            element VERSION { "1.0" | "1.1" } ,
+            ## Tipo de archivo/mensaje. Coincide con el elemento raíz
+            element CODIGO { "PEDIDO" | "REMITO" | "FACTURA" | "DECLAVENTA" | "FACREM" } ,
+            ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
+            ## si se reciben de un emisor dos mensajes con el mismo identificador, deben considerarse
+            ## como duplicados
+            element IDENTIFICADOR { text }?
+    }
+    ## Información del remitente
+    origen = element ORIGEN {
+            element NOMBRE { text } ,
+            element ID_FISCAL { text }? ,
+            ## Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+            ## Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+            ##   1. PEDIDO, cuando no se indica en el campo "DETALLE"
+            element ID_SUCURSAL { text }? ,
+            element CODIGO_SINLI { text }
+    }
+    ## Información del destinatario
+    destino = element DESTINO {
+            element NOMBRE { text } ,
+            element ID_FISCAL { text }? ,
+            ## Identificador de la sucursal. Los asigna cada empresa, debe comunicárselo a sus pares.
+            ## Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
+            ##   1. REMITO
+            element ID_SUCURSAL { text }? ,
+            element CODIGO_SINLI { text }
+    }
+    observaciones = element OBSERVACIONES {
+        element ITEM {
+            element ASUNTO { text }?,
+            element CUERPO { text }
+        }+
+    }
+    librocantidad = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro
+    }
+    letrafactura = element LETRA { "A" | "B" | "C" | "E" | "M" }
+    moneda = element MONEDA { "ARS" | "USD" | "EUR" }
+
+    precio = element PRECIO {
+        moneda,
+        element VALOR { xsd:decimal },
+        element TIPO { "PVP" | "NETO" }
+    }
+    librocantidadpreciooptativo = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro,
+        precio?
+    }
+    id_libro = element ID_LIBRO {
+        ## Se deben tratar de completar la mayor cantidad de códigos
+        ## posibles, para facilitar al receptor resolver ambigüedades
+
+        element EAN { text } ,
+        ## ISBN_13 con o sin guiones, de ser posible, con guiones
+        element ISBN_13 { text }? ,
+        element ISBN_10 { text }? ,
+        ## Es el código interno con el que la EDITORIAL (o PROVEEDOR),
+        ## se refiere al libro.
+        element COD_ARTICULO { text } ? ,
+        element TITULO { text } ?
+    }
+    contenidopedido = element CONTENIDO {
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
+        element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
+        element TRANSPORTE { text }? ,
+        element PAGA_EN { "ORIGEN" | "DESTINO" }? ,
+        element OBSERVACIONES_ENTREGA { text }? ,
+        element DETALLE {
+            ## Sucursal a la que corresponde el pedido. Si no está presente se considera
+            ## la sucursal indicada en la cabecera
+            attribute ID_SUCURSAL { text }?,
+            librocantidad+
+        }+ ,
+        observaciones?
+    }
+    contenidoremito = element CONTENIDO {
+        ## En el caso de Argentina debe indicarse el número completo
+        ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        ## Fecha de vencimiento del remito.
+        element FECHA_VTO { xsd:dateTime }? ,
+        element NUMERO_PEDIDO { text }? ,
+        element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
+        element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
+        element TRANSPORTE { text }? ,
+        element OBSERVACIONES_ENTREGA { text }? ,
+        element DETALLE {
+            librocantidadpreciooptativo+
+        },
+        observaciones?
+    }
+
+    impuesto = element IMPUESTO {
+        element TIPO { "IVA" | "PERC_IIBB" | "PERC_IVA" | "BASE_RETENCION_IIBB" },
+        ## Provincia para la base de retencion iibb.
+        element PROVINCIA { text }?,
+        element ALICUOTA { xsd:decimal }?,
+        ## Base sobre la que se calcula el importe, en el caso del IVA
+        ## sería el NETO GRAVADO.
+        ## En el caso de la BASE_RETENCION_IIBB la suma de las bases
+        ## no incluyen otros impuestos
+        element BASE { xsd:decimal }?,
+        ## En el caso de BASE_RETENCION_IIBB, que es solo informativo
+        ## el importe sería cero.
+        element IMPORTE {xsd:decimal }?
+    }
+
+    referencia_a_remito = element ITEM {
+        element NUMERO_REMITO { text },
+        element CANTIDAD { xsd:int }
+    }
+
+    itemfactura = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro ,
+        precio ,
+        element DESCUENTO { xsd:decimal } ,
+        ## Detalle de los remitos a los que aplica el ítem de factura
+        ## Si está indicado, la suma de las cantidades debe coincidir con la
+        ## cantidad del ítem
+        element REMITOS {
+            referencia_a_remito+
+        }? ,
+        element TOTAL { xsd:decimal }
+    }
+
+    contenidofactura = element CONTENIDO {
+        letrafactura? ,
+        ## En el caso de Argentina debe indicarse el número completo
+        ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element FECHA_VTO { xsd:dateTime } ,
+        element TIPO_OPERACION { "FIRME" | "BAJA_CONSIGNACION" | "FIRME_CON_DERECHO" } ,
+        ## Número de pedido o de liquidación de venta, según corresponda
+        ## si fuera contra varios pedidos, se separan los números con
+        ## coma
+        element NUMERO_PEDIDO { text }? ,
+        element NUMERO_DECLAVENTA { text }? ,
+        ## Número de remito al que aplica la factura.
+        ## Indicarlo implica que TODA la factura aplica a este remito.
+        element NUMERO_REMITO { text }? ,
+        ## Total de la factura - Incluye impuestos
+        element TOTAL {
+            moneda,
+            element VALOR { xsd:decimal }
+        },
+        element IMPUESTOS {
+            impuesto+
+        }?,
+        element DETALLE {
+            itemfactura+
+        },
+        observaciones?
+    }
+
+    itemfacturaremito = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro ,
+        precio ,
+        element DESCUENTO { xsd:decimal } ,
+        element TOTAL { xsd:decimal }
+    }
+
+    contenidofacturaremito = element CONTENIDO {
+        ## En el caso de Argentina debe indicarse el número completo
+        ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
+        letrafactura? ,
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element FECHA_VTO { xsd:dateTime } ,
+        element TIPO_OPERACION { "FIRME" | "REPOSICION" | "FIRME_CON_DERECHO" } ,
+        ## Número de pedido
+        element NUMERO_PEDIDO { text }? ,
+        element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
+        element TRANSPORTE { text }? ,
+        element OBSERVACIONES_ENTREGA { text }? ,
+        ## Total de la factura
+        element TOTAL {
+            moneda,
+            element VALOR { xsd:decimal }
+        },
+        element IMPUESTOS {
+            impuesto+
+        }?,
+        element DETALLE {
+            itemfacturaremito+
+        },
+        observaciones?
+    }
+    contenidodeclaventa = element CONTENIDO {
+        element NUMERO_DOCUMENTO { text } ,
+        element FECHA { xsd:dateTime } ,
+        element TIPO_DECLARACION { "VENTA_ENTRE_FECHAS" | "DIFERENCIA_DE_STOCK" } ? ,
+        element RANGO_DE_VENTAS {
+            element DESDE { xsd:dateTime },
+            element HASTA { xsd:dateTime }
+        }?,
+        element DETALLE {
+            librocantidadpreciooptativo+
+        },
+        ## En este punto se indica la distribución impositiva
+        ## para la base imponible de retención. Es solo indicativo
+        ## para aquellos proveedores que no cuenten con esta
+        ## información en su sistema.
+        element IMPUESTOS {
+            impuesto+
+        }?,
+        observaciones?
+    }
+    contenidomensajegenerico = element CONTENIDO {
+        ## Tipos de mensajes:
+        ## * SOLICITUD_DEVOLUCION: desde el editor al librero.
+        ##   El editor solicita que le devuelvan determinados libros.
+        ## * SOLICITUD_RETIRO_DEVOLUCION: desde el librero al editor,
+        ##   que solicita que pasen a retirar una devolución.
+        ## * RETIRO_DEVOLUCION: desde el librero al editor,
+        ##   que informa que la devolución fue retirada.
+        ## * RECEPCION_DEVOLUCION: desde el editor al librero, cuando el editor
+        ##   procesa la devolución. En este mensaje indica la cantidad de libros
+        ##   recibidos y en las observaciones detalla las NCs, Notas de devolución
+        ##   y si los hubiera, los rechazos.
+        ## * OTRO: para otros casos.
+        element TIPO_DE_MENSAJE { "SOLICITUD_DEVOLUCION" |
+            "SOLICITUD_RETIRO_DEVOLUCION" |
+            "RECEPCION_DEVOLUCION" |
+            "OTRO"
+        } ? ,
+        ## Número de remito en los casos en que aplica
+        element NUMERO_REMITO { text }?,
+        element DETALLE {
+            attribute ID_SUCURSAL { text }?,
+            librocantidadpreciooptativo+
+        }*,
+        observaciones?
+    }
+}
