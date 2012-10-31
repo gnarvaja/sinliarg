@@ -144,12 +144,14 @@ class FilesystemChannel(MessageChannel):
         try:
             dst_file = open(file_path, 'w')
         except IOError, e:      # si no existia el directorio intenta crearlo
+            logging.debug('Creando directorio %s' % os.path.join(dst_path, message.sinli_type))
             if e.errno == errno.ENOENT:
                 os.makedirs(os.path.join(dst_path, message.sinli_type))
                 dst_file = open(file_path, 'w')
             else:
                 raise
 
+        logging.info('Guardando archivo %s' % file_path)
         dst_file.write(message.xml)
         dst_file.close()
         return file_path
@@ -231,9 +233,9 @@ class EmailChannel(MessageChannel):
         """Inicia una conexión con el servidor pop
         """
         logging.debug('Iniciando conexion con servidor pop3 %s:%s'
-                        % (self.pop_settings['host'], self.pop_settings['port']))
+                        % (self.pop_settings['host'], self.pop_settings.get('port', None)))
         pop_server = poplib.POP3(self.pop_settings['host'],
-                                 port=self.pop_settings['port'] or 110)
+                                 port=self.pop_settings.get('port', 110))
         pop_server.user(self.pop_settings['user'])
         pop_server.pass_(self.pop_settings['pass'])
         return pop_server
@@ -255,7 +257,8 @@ class EmailChannel(MessageChannel):
         for email_ids in pop_server.uidl()[1]:
             email_nro, email_uid = email_ids.split(' ')
             try:
-                email = email_parser.parsestr(pop_server.retr(email_nro))
+                email_data = '\n'.join(pop_server.retr(email_nro)[1])
+                email = email_parser.parsestr(email_data)
             except Exception:
                 logging.error('Error leyendo email uid: %s\n%s' % (email_uid, traceback.format_exc()))
                 continue
