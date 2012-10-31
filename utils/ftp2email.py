@@ -235,7 +235,7 @@ class EmailChannel(MessageChannel):
         logging.debug('Iniciando conexion con servidor pop3 %s:%s'
                         % (self.pop_settings['host'], self.pop_settings.get('port', None)))
         pop_server = poplib.POP3(self.pop_settings['host'],
-                                 port=self.pop_settings.get('port', 110))
+                                 port=self.pop_settings.get('port', None) or 110)
         pop_server.user(self.pop_settings['user'])
         pop_server.pass_(self.pop_settings['pass'])
         return pop_server
@@ -291,13 +291,19 @@ class EmailChannel(MessageChannel):
             Elimina el email del servidor pop
             :msg_id: uid del email
         """
+        deleted = False
         pop_server = self.get_pop_server()
         for email_ids in pop_server.uidl()[1]:
             email_nro, email_uid = email_ids.split(' ')
             if email_uid == msg_id:
+                logging.info('Eliminando email uid: %s del servidor POP' % msg_id)
                 pop_server.dele(email_nro)
+                deleted = True
                 break
         pop_server.quit()
+        if not deleted:
+            logging.error('No se encontró el mensaje uid: %s' % msg_id)
+        return deleted
 
 
 def pipeChannels(src_channel, dst_channel):
