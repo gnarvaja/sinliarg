@@ -592,13 +592,11 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
           </element>
         </element>
       </optional>
-      <oneOrMore>
-        <element name="DETALLE">
-          <oneOrMore>
-            <ref name="librocantidadpreciooptativo"/>
-          </oneOrMore>
-        </element>
-      </oneOrMore>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="librocantidadpreciooptativo"/>
+        </oneOrMore>
+      </element>
       <optional>
         <element name="IMPUESTOS">
           <a:documentation>En este punto se indica la distribución impositiva
