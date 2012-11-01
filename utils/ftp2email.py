@@ -359,11 +359,12 @@ def __main__(argv=None):
 
     # configurar el log
     log_format = '%(asctime)s|%(levelname)s|%(message)s'
+    log_level = getattr(logging, settings.get('log_level', 'DEBUG'), logging.DEBUG)
     if 'log_file' in settings:
-        logging.basicConfig(filename=settings['log_file'], level=logging.DEBUG,
+        logging.basicConfig(filename=settings['log_file'], level=log_level,
                             format=log_format)
     else:
-        logging.basicConfig(level=logging.DEBUG, format=log_format)
+        logging.basicConfig(level=log_level, format=log_format)
 
     # intercambiar mensajes
     channels_map = {'files': lambda:
@@ -371,7 +372,7 @@ def __main__(argv=None):
                     'emails': lambda:
                         EmailChannel(smtp_settings=settings['smtp_settings'],
                                     pop_settings=settings['pop_settings'],
-                                    msg_from=settings["sinli_email"],
+                                    msg_from=settings['sinli_email'],
                                     eaddress_file=settings['eaddress_file'])}
 
     input_channel = channels_map[args.input]()

@@ -218,7 +218,7 @@ grammar {
         }?,
         element DETALLE {
             librocantidadpreciooptativo+
-        }+,
+        },
         ## En este punto se indica la distribución impositiva
         ## para la base imponible de retención. Es solo indicativo
         ## para aquellos proveedores que no cuenten con esta

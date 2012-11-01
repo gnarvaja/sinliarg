@@ -1,4 +1,6 @@
 {
+    "log_file": "/var/log/ftp2email.log",
+    "log_level": "INFO",
     "sinli_code": "L0002349",
     "sinli_email": "sinliilhsa@fierro-soft.com.ar",
     "email_pass": "XXXXXXXX",
