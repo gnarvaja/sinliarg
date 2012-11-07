@@ -33,14 +33,79 @@
         <ref name="destino"/>
         <ref name="contenidofacturaremito"/>
       </element>
-      <element name="MENSAJE_GENERICO">
+      <element name="ACUSERECIBO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidoacuserecibo"/>
+      </element>
+      <element name="MENSAJEGENERICO">
         <ref name="archivo"/>
         <ref name="origen"/>
         <ref name="destino"/>
         <ref name="contenidomensajegenerico"/>
       </element>
+      <element name="SOLICITUD_DEVOLUCION">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidomensajegenerico"/>
+      </element>
+      <element name="SOLICITUD_RETIRO_DEVOLUCION">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidomensajegenerico"/>
+      </element>
+      <element name="RETIRO_DEVOLUCION">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidomensajegenerico"/>
+      </element>
+      <element name="RECEPCIONDEVOLUCION">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidorecepciondevolucion"/>
+      </element>
+      <element name="RECEPCIONDEVOLUCION_PENDIENTE">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidorecepciondevolucion"/>
+      </element>
+      <element name="NOTACREDITO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidonotacredito"/>
+      </element>
+      <element name="NOTADEVOLUCION">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidonotadevolucion"/>
+      </element>
     </choice>
   </start>
+  <define name="tipomensaje">
+    <element name="CODIGO">
+      <choice>
+        <value>PEDIDO</value>
+        <value>REMITO</value>
+        <value>FACTURA</value>
+        <value>DECLAVENTA</value>
+        <value>FACREM</value>
+        <value>MENSAJEGENERICO</value>
+        <value>NOTACREDITO</value>
+        <value>NOTADEVOLUCION</value>
+        <value>RECEPCIONDEVOLUCION</value>
+        <value>RECEPCIONDEVOLUCION_PENDIENTE</value>
+        <value>ACUSE_RECIBO</value>
+      </choice>
+    </element>
+  </define>
   <define name="archivo">
     <a:documentation>Informacion general del archivo/mensaje</a:documentation>
     <element name="ARCHIVO">
@@ -58,16 +123,9 @@
           <value>1.1</value>
         </choice>
       </element>
-      <element name="CODIGO">
+      <ref name="tipomensaje">
         <a:documentation>Tipo de archivo/mensaje. Coincide con el elemento raíz</a:documentation>
-        <choice>
-          <value>PEDIDO</value>
-          <value>REMITO</value>
-          <value>FACTURA</value>
-          <value>DECLAVENTA</value>
-          <value>FACREM</value>
-        </choice>
-      </element>
+      </ref>
       <optional>
         <element name="IDENTIFICADOR">
           <a:documentation>Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
@@ -430,11 +488,23 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       <element name="FECHA_VTO">
         <data type="dateTime"/>
       </element>
+      <optional>
+        <element name="TIPO_DOCUMENTO">
+          <a:documentation>Tipo de documento, si no se indica, es Factura</a:documentation>
+          <choice>
+            <value>FACTURA</value>
+            <value>NOTA_DE_DEBITO</value>
+          </choice>
+        </element>
+      </optional>
       <element name="TIPO_OPERACION">
         <choice>
           <value>FIRME</value>
           <value>BAJA_CONSIGNACION</value>
           <value>FIRME_CON_DERECHO</value>
+          <value>OTROS</value>
+          <value>ND_RECHAZO_CHEQUE</value>
+          <value>ND_INTERES</value>
         </choice>
       </element>
       <optional>
@@ -469,6 +539,11 @@ Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
           <oneOrMore>
             <ref name="impuesto"/>
           </oneOrMore>
+        </element>
+      </optional>
+      <optional>
+        <element name="DETALLE_TEXTO">
+          <text/>
         </element>
       </optional>
       <element name="DETALLE">
@@ -616,7 +691,7 @@ información en su sistema.</a:documentation>
   <define name="contenidomensajegenerico">
     <element name="CONTENIDO">
       <optional>
-        <element name="TIPO_DE_MENSAJE">
+        <element name="NUMERO_REMITO">
           <a:documentation>Tipos de mensajes:
 * SOLICITUD_DEVOLUCION: desde el editor al librero.
   El editor solicita que le devuelvan determinados libros.
@@ -624,22 +699,8 @@ información en su sistema.</a:documentation>
   que solicita que pasen a retirar una devolución.
 * RETIRO_DEVOLUCION: desde el librero al editor,
   que informa que la devolución fue retirada.
-* RECEPCION_DEVOLUCION: desde el editor al librero, cuando el editor
-  procesa la devolución. En este mensaje indica la cantidad de libros
-  recibidos y en las observaciones detalla las NCs, Notas de devolución
-  y si los hubiera, los rechazos.
-* OTRO: para otros casos.</a:documentation>
-          <choice>
-            <value>SOLICITUD_DEVOLUCION</value>
-            <value>SOLICITUD_RETIRO_DEVOLUCION</value>
-            <value>RECEPCION_DEVOLUCION</value>
-            <value>OTRO</value>
-          </choice>
-        </element>
-      </optional>
-      <optional>
-        <element name="NUMERO_REMITO">
-          <a:documentation>Número de remito en los casos en que aplica</a:documentation>
+* OTRO: para otros casos.
+Número de remito en los casos en que aplica</a:documentation>
           <text/>
         </element>
       </optional>
@@ -653,6 +714,286 @@ información en su sistema.</a:documentation>
           </oneOrMore>
         </element>
       </zeroOrMore>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="itemrecepciondevolucion">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <a:documentation>Cantidad recibida</a:documentation>
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <optional>
+        <ref name="precio"/>
+      </optional>
+      <optional>
+        <element name="CANTIDAD_REMITO_CLIENTE">
+          <a:documentation>Cantidad indicada en remito de cliente, si hubiera varios sería la suma</a:documentation>
+          <data type="int"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="CANTIDAD_NOTA_CREDITO">
+          <a:documentation>Cantidad imputada a Notas de Crédito</a:documentation>
+          <data type="int"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="CANTIDAD_NOTA_DEVOLUCION">
+          <a:documentation>Cantidad imputada a Notas de devolución de consignación</a:documentation>
+          <data type="int"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="CANTIDAD_PENDIENTE">
+          <a:documentation>Cantidad pendiente de imputación - Solo presente en documentos de
+tipo RECEPCIONDEVOLUCION_PENDIENTE</a:documentation>
+          <data type="int"/>
+        </element>
+      </optional>
+      <optional>
+        <element name="CANTIDAD_RECHAZADA">
+          <a:documentation>Cantidad rechazada</a:documentation>
+          <data type="int"/>
+        </element>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidorecepciondevolucion">
+    <element name="CONTENIDO">
+      <optional>
+        <element name="NUMERO_DOCUMENTO">
+          <a:documentation>Documento que emite el editor cuando recibe una devolución.
+donde informa las cantidades recibidas y a qué las imputa.
+Este elemento se usa para RECEPCIONDEVOLUCION y para
+RECEPCIONDEVOLUCION_PENDIENTE</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="REMITOS_CLIENTE">
+          <a:documentation>Número(s) de remito(s) de la devolución del librero</a:documentation>
+          <oneOrMore>
+            <element name="NUMERO_REMITO">
+              <text/>
+            </element>
+          </oneOrMore>
+        </element>
+      </optional>
+      <element name="DETALLE">
+        <oneOrMore>
+          <ref name="itemrecepciondevolucion"/>
+        </oneOrMore>
+      </element>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidoacuserecibo">
+    <element name="CONTENIDO">
+      <element name="DOCUMENTO_REFERENCIA">
+        <a:documentation>Acuse de recibo</a:documentation>
+        <ref name="tipomensaje"/>
+        <optional>
+          <element name="IDENTIFICADOR">
+            <text/>
+          </element>
+        </optional>
+        <optional>
+          <element name="NUMERO_DOCUMENTO">
+            <text/>
+          </element>
+        </optional>
+      </element>
+      <element name="RESULTADO">
+        <choice>
+          <value>OK</value>
+          <value>CON_INCIDENCIAS</value>
+        </choice>
+      </element>
+      <optional>
+        <element name="DIFERENCIAS">
+          <element name="DIFERENCIA">
+            <ref name="id_libro"/>
+            <element name="CANTIDAD_TEORICA">
+              <a:documentation>La cantidad que debería haberse recibido
+para que el documento se procese sin incidencias</a:documentation>
+              <data type="int"/>
+            </element>
+            <element name="CANTIDAD_REAL">
+              <a:documentation>La cantidad efectivamente recibida</a:documentation>
+              <data type="int"/>
+            </element>
+          </element>
+        </element>
+      </optional>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="referencia_a_factura">
+    <element name="ITEM">
+      <element name="NUMERO_FACTURA">
+        <text/>
+      </element>
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+    </element>
+  </define>
+  <define name="itemnotacredito">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <ref name="precio"/>
+      <element name="DESCUENTO">
+        <data type="decimal"/>
+      </element>
+      <optional>
+        <element name="FACTURAS">
+          <a:documentation>Detalle de los remitos a los que aplica el ítem de factura
+Si está indicado, la suma de las cantidades debe coincidir con la
+cantidad del ítem</a:documentation>
+          <oneOrMore>
+            <ref name="referencia_a_factura"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <data type="decimal"/>
+      </element>
+    </element>
+  </define>
+  <define name="contenidonotacredito">
+    <element name="CONTENIDO">
+      <optional>
+        <ref name="letrafactura"/>
+      </optional>
+      <element name="NUMERO_DOCUMENTO">
+        <a:documentation>En el caso de Argentina debe indicarse el número completo
+legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <optional>
+        <element name="MOTIVO">
+          <choice>
+            <value>DEVOLUCION</value>
+            <value>DESCUENTO</value>
+            <value>OTRO</value>
+            <value>DEVOLUCION_POR_FALLA</value>
+            <value>DIFERENCIA_FACTURACION</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_DEVOLUCION">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_FACTURA">
+          <a:documentation>Número de factura al que aplica la NC
+Indicarlo implica que TODA la NC aplica a esta factura</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <element name="TOTAL">
+        <a:documentation>Total de la NC - Incluye impuestos</a:documentation>
+        <ref name="moneda"/>
+        <element name="VALOR">
+          <data type="decimal"/>
+        </element>
+      </element>
+      <optional>
+        <element name="IMPUESTOS">
+          <oneOrMore>
+            <ref name="impuesto"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <optional>
+        <element name="DETALLE_TEXTO">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="itemnotacredito"/>
+          </oneOrMore>
+        </element>
+      </optional>
+      <optional>
+        <ref name="observaciones"/>
+      </optional>
+    </element>
+  </define>
+  <define name="itemnotadevolucion">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <optional>
+        <ref name="precio"/>
+      </optional>
+      <optional>
+        <element name="REMITOS">
+          <a:documentation>Detalle de los remitos a los que aplica el ítem de factura
+Si está indicado, la suma de las cantidades debe coincidir con la
+cantidad del ítem</a:documentation>
+          <oneOrMore>
+            <ref name="referencia_a_remito"/>
+          </oneOrMore>
+        </element>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidonotadevolucion">
+    <element name="CONTENIDO">
+      <element name="NUMERO_DOCUMENTO">
+        <text/>
+      </element>
+      <element name="FECHA">
+        <data type="dateTime"/>
+      </element>
+      <optional>
+        <element name="MOTIVO">
+          <choice>
+            <value>DEVOLUCION</value>
+            <value>AJUSTE</value>
+          </choice>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_DEVOLUCION">
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_REMITO">
+          <a:documentation>Número de remito al que aplica la nota de devolución
+Indicarlo implica que TODA la dev aplica a este remito</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="DETALLE">
+          <oneOrMore>
+            <ref name="itemnotadevolucion"/>
+          </oneOrMore>
+        </element>
+      </optional>
       <optional>
         <ref name="observaciones"/>
       </optional>
