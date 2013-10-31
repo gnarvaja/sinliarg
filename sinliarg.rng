@@ -3,6 +3,18 @@
 <grammar xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0" xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
   <start>
     <choice>
+      <element name="CATALOGO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidocatalogo"/>
+      </element>
+      <element name="CAMBIOPRECIO">
+        <ref name="archivo"/>
+        <ref name="origen"/>
+        <ref name="destino"/>
+        <ref name="contenidocambiodeprecio"/>
+      </element>
       <element name="PEDIDO">
         <ref name="archivo"/>
         <ref name="origen"/>
@@ -103,6 +115,8 @@
         <value>RECEPCIONDEVOLUCION</value>
         <value>RECEPCIONDEVOLUCION_PENDIENTE</value>
         <value>ACUSE_RECIBO</value>
+        <value>CATALOGO</value>
+        <value>CAMBIOPRECIO</value>
       </choice>
     </element>
   </define>
@@ -238,8 +252,15 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
         <choice>
           <value>PVP</value>
           <value>NETO</value>
+          <value>PVP_SINIVA</value>
+          <value>NETO_SINIVA</value>
         </choice>
       </element>
+      <optional>
+        <element name="ALICUOTA_IVA">
+          <data type="decimal"/>
+        </element>
+      </optional>
     </element>
   </define>
   <define name="librocantidadpreciooptativo">
@@ -251,6 +272,70 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       <optional>
         <ref name="precio"/>
       </optional>
+    </element>
+  </define>
+  <define name="itemremito">
+    <element name="ITEM">
+      <element name="CANTIDAD">
+        <data type="int"/>
+      </element>
+      <ref name="id_libro"/>
+      <optional>
+        <ref name="precio"/>
+      </optional>
+      <optional>
+        <element name="DESCUENTO">
+          <data type="decimal"/>
+        </element>
+      </optional>
+      <optional>
+        <ref name="aduana"/>
+      </optional>
+    </element>
+  </define>
+  <define name="contenidocatalogo">
+    <element name="CONTENIDO">
+      <text>
+        <a:documentation>TO DO</a:documentation>
+      </text>
+    </element>
+  </define>
+  <define name="contenidocambiodeprecio">
+    <element name="CONTENIDO">
+      <element name="FECHA_VIGENCIA">
+        <a:documentation>Fecha a partir de la cual los cambios de precio entran en vigencia</a:documentation>
+        <data type="dateTime"/>
+      </element>
+      <element name="CAMBIOS">
+        <oneOrMore>
+          <ref name="cambiodeprecio"/>
+        </oneOrMore>
+      </element>
+    </element>
+  </define>
+  <define name="cambiodeprecio">
+    <element name="CAMBIO_DE_PRECIO">
+      <ref name="id_libro"/>
+      <ref name="precio"/>
+      <optional>
+        <element name="DESCUENTO">
+          <data type="decimal"/>
+        </element>
+      </optional>
+      <element name="PRECIO_ANTERIOR">
+        <ref name="moneda"/>
+        <element name="VALOR">
+          <data type="decimal"/>
+        </element>
+        <element name="TIPO">
+          <choice>
+            <value>PVP</value>
+            <value>NETO</value>
+            <value>PVP_SINIVA</value>
+            <value>NETO_SINIVA</value>
+          </choice>
+        </element>
+      </element>
     </element>
   </define>
   <define name="id_libro">
@@ -350,6 +435,18 @@ la sucursal indicada en la cabecera</a:documentation>
 legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
         <text/>
       </element>
+      <optional>
+        <element name="TRANSPORTE_NUMERICO">
+          <a:documentation>Transporte de los números del remito - Optativo, si no está el remito 
+solo usa un solo número</a:documentation>
+          <element name="DESDE">
+            <text/>
+          </element>
+          <element name="HASTA">
+            <text/>
+          </element>
+        </element>
+      </optional>
       <element name="FECHA">
         <data type="dateTime"/>
       </element>
@@ -361,6 +458,14 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       </optional>
       <optional>
         <element name="NUMERO_PEDIDO">
+          <a:documentation>Número de pedido de quien recibe el remito (cliente)
+También conocido como número de Orden de Compra</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_PEDIDO_PROVEEDOR">
+          <a:documentation>Número de pedido del emisor del remito</a:documentation>
           <text/>
         </element>
       </optional>
@@ -390,12 +495,24 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       </optional>
       <element name="DETALLE">
         <oneOrMore>
-          <ref name="librocantidadpreciooptativo"/>
+          <ref name="itemremito"/>
         </oneOrMore>
       </element>
       <optional>
         <ref name="observaciones"/>
       </optional>
+    </element>
+  </define>
+  <define name="aduana">
+    <element name="ADUANA">
+      <element name="NUMERO_DESPACHO">
+        <a:documentation>Número de despacho a plaza</a:documentation>
+        <text/>
+      </element>
+      <element name="PAIS_ORIGEN">
+        <a:documentation>TODO: definir la codificación del país</a:documentation>
+        <text/>
+      </element>
     </element>
   </define>
   <define name="impuesto">
@@ -470,6 +587,9 @@ cantidad del ítem</a:documentation>
       <element name="TOTAL">
         <data type="decimal"/>
       </element>
+      <optional>
+        <ref name="aduana"/>
+      </optional>
     </element>
   </define>
   <define name="contenidofactura">
@@ -482,6 +602,18 @@ cantidad del ítem</a:documentation>
 legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
         <text/>
       </element>
+      <optional>
+        <element name="TRANSPORTE_NUMERICO">
+          <a:documentation>Transporte de los números del remito - Optativo, si no está el remito 
+solo usa un solo número</a:documentation>
+          <element name="DESDE">
+            <text/>
+          </element>
+          <element name="HASTA">
+            <text/>
+          </element>
+        </element>
+      </optional>
       <element name="FECHA">
         <data type="dateTime"/>
       </element>
@@ -512,6 +644,12 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
           <a:documentation>Número de pedido o de liquidación de venta, según corresponda
 si fuera contra varios pedidos, se separan los números con
 coma</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_PEDIDO_PROVEEDOR">
+          <a:documentation>Número de pedido del emisor del remito</a:documentation>
           <text/>
         </element>
       </optional>
@@ -569,6 +707,9 @@ Indicarlo implica que TODA la factura aplica a este remito.</a:documentation>
       <element name="TOTAL">
         <data type="decimal"/>
       </element>
+      <optional>
+        <ref name="aduana"/>
+      </optional>
     </element>
   </define>
   <define name="contenidofacturaremito">
@@ -582,6 +723,18 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       <element name="NUMERO_DOCUMENTO">
         <text/>
       </element>
+      <optional>
+        <element name="TRANSPORTE_NUMERICO">
+          <a:documentation>Transporte de los números del remito - Optativo, si no está el remito 
+solo usa un solo número</a:documentation>
+          <element name="DESDE">
+            <text/>
+          </element>
+          <element name="HASTA">
+            <text/>
+          </element>
+        </element>
+      </optional>
       <element name="FECHA">
         <data type="dateTime"/>
       </element>
@@ -597,7 +750,14 @@ legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)</a:documentation>
       </element>
       <optional>
         <element name="NUMERO_PEDIDO">
-          <a:documentation>Número de pedido</a:documentation>
+          <a:documentation>Número de pedido de quien recibe el remito (cliente)
+También conocido como número de Orden de Compra</a:documentation>
+          <text/>
+        </element>
+      </optional>
+      <optional>
+        <element name="NUMERO_PEDIDO_PROVEEDOR">
+          <a:documentation>Número de pedido del emisor del remito</a:documentation>
           <text/>
         </element>
       </optional>
@@ -809,10 +969,18 @@ RECEPCIONDEVOLUCION_PENDIENTE</a:documentation>
           </element>
         </optional>
       </element>
+      <element name="TIPO_ACUSE">
+        <choice>
+          <value>RECEPCION_ELECTRONICA</value>
+          <value>RECEPCION_FISICA</value>
+          <value>PROCESADO</value>
+        </choice>
+      </element>
       <element name="RESULTADO">
         <choice>
           <value>OK</value>
           <value>CON_INCIDENCIAS</value>
+          <value>RECHAZADO</value>
         </choice>
       </element>
       <optional>
@@ -828,6 +996,11 @@ para que el documento se procese sin incidencias</a:documentation>
               <a:documentation>La cantidad efectivamente recibida</a:documentation>
               <data type="int"/>
             </element>
+            <optional>
+              <element name="OBSERVACIONES">
+                <text/>
+              </element>
+            </optional>
           </element>
         </element>
       </optional>
