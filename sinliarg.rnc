@@ -1,6 +1,8 @@
 # Gramática en formato RELAX-NG de los mensajes SINLI-Argentina
 grammar {
     start =
+        element CATALOGO { archivo , origen , destino , contenidocatalogo } |
+        element CAMBIOPRECIO { archivo , origen , destino , contenidocambiodeprecio } |
         element PEDIDO { archivo , origen , destino , contenidopedido } |
         element REMITO { archivo , origen , destino , contenidoremito } |
         element FACTURA { archivo , origen , destino , contenidofactura } |
@@ -20,7 +22,7 @@ grammar {
                              "MENSAJEGENERICO" | "NOTACREDITO" |
                              "NOTADEVOLUCION" | "RECEPCIONDEVOLUCION" |
                              "RECEPCIONDEVOLUCION_PENDIENTE" |
-                             "ACUSE_RECIBO" }
+                             "ACUSE_RECIBO" | "CATALOGO" | "CAMBIOPRECIO" }
     ## Informacion general del archivo/mensaje
     archivo = element ARCHIVO {
             ## Descripción en texto libre del contenido del archivo
@@ -70,12 +72,41 @@ grammar {
     precio = element PRECIO {
         moneda,
         element VALOR { xsd:decimal },
-        element TIPO { "PVP" | "NETO" }
+        element TIPO { "PVP" | "NETO" | "PVP_SINIVA" | "NETO_SINIVA" },
+        element ALICUOTA_IVA { xsd:decimal }?
     }
     librocantidadpreciooptativo = element ITEM {
         element CANTIDAD { xsd:int } ,
         id_libro,
         precio?
+    }
+    itemremito = element ITEM {
+        element CANTIDAD { xsd:int } ,
+        id_libro,
+        precio?,
+        element DESCUENTO { xsd:decimal }?,
+        aduana?
+    }
+    contenidocatalogo = element CONTENIDO {
+        ## TO DO
+        text
+    }
+    contenidocambiodeprecio = element CONTENIDO {
+        ## Fecha a partir de la cual los cambios de precio entran en vigencia
+        element FECHA_VIGENCIA { xsd:dateTime },
+        element CAMBIOS {
+            cambiodeprecio+
+        }
+    }
+    cambiodeprecio = element CAMBIO_DE_PRECIO {
+        id_libro,
+        precio,
+        element DESCUENTO { xsd:decimal }?,
+        element PRECIO_ANTERIOR {
+            moneda,
+            element VALOR { xsd:decimal },
+            element TIPO { "PVP" | "NETO" | "PVP_SINIVA" | "NETO_SINIVA" }
+        }
     }
     id_libro = element ID_LIBRO {
         ## Se deben tratar de completar la mayor cantidad de códigos
@@ -110,18 +141,35 @@ grammar {
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
         element NUMERO_DOCUMENTO { text } ,
+        ## Transporte de los números del remito - Optativo, si no está el remito 
+        ## solo usa un solo número
+        element TRANSPORTE_NUMERICO {
+            element DESDE {text },
+            element HASTA {text }
+        }?,
         element FECHA { xsd:dateTime } ,
         ## Fecha de vencimiento del remito.
         element FECHA_VTO { xsd:dateTime }? ,
+        ## Número de pedido de quien recibe el remito (cliente)
+        ## También conocido como número de Orden de Compra
         element NUMERO_PEDIDO { text }? ,
+        ## Número de pedido del emisor del remito
+        element NUMERO_PEDIDO_PROVEEDOR { text }? ,
         element TIPO_OPERACION { "FIRME" | "CONSIGNACION" | "FIRME_CON_DERECHO" | "DONACION" } ,
         element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
         element TRANSPORTE { text }? ,
         element OBSERVACIONES_ENTREGA { text }? ,
         element DETALLE {
-            librocantidadpreciooptativo+
+            itemremito+
         },
         observaciones?
+    }
+
+    aduana = element ADUANA {
+        ## Número de despacho a plaza
+        element NUMERO_DESPACHO { text },
+        ## TODO: definir la codificación del país
+        element PAIS_ORIGEN { text }      
     }
 
     impuesto = element IMPUESTO {
@@ -155,7 +203,8 @@ grammar {
         element REMITOS {
             referencia_a_remito+
         }? ,
-        element TOTAL { xsd:decimal }
+        element TOTAL { xsd:decimal },
+        aduana?
     }
 
     contenidofactura = element CONTENIDO {
@@ -163,6 +212,12 @@ grammar {
         ## En el caso de Argentina debe indicarse el número completo
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
         element NUMERO_DOCUMENTO { text } ,
+        ## Transporte de los números del remito - Optativo, si no está el remito 
+        ## solo usa un solo número
+        element TRANSPORTE_NUMERICO {
+            element DESDE {text },
+            element HASTA {text }
+        }?,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,
         ## Tipo de documento, si no se indica, es Factura
@@ -173,6 +228,8 @@ grammar {
         ## si fuera contra varios pedidos, se separan los números con
         ## coma
         element NUMERO_PEDIDO { text }? ,
+        ## Número de pedido del emisor del remito
+        element NUMERO_PEDIDO_PROVEEDOR { text }? ,
         element NUMERO_DECLAVENTA { text }? ,
         ## Número de remito al que aplica la factura.
         ## Indicarlo implica que TODA la factura aplica a este remito.
@@ -197,7 +254,8 @@ grammar {
         id_libro ,
         precio ,
         element DESCUENTO { xsd:decimal } ,
-        element TOTAL { xsd:decimal }
+        element TOTAL { xsd:decimal },
+        aduana?
     }
 
     contenidofacturaremito = element CONTENIDO {
@@ -205,11 +263,20 @@ grammar {
         ## legal, Ejemplo: 0001-00023342 (4 dígitos + "-" + 8 dígitos)
         letrafactura? ,
         element NUMERO_DOCUMENTO { text } ,
+        ## Transporte de los números del remito - Optativo, si no está el remito 
+        ## solo usa un solo número
+        element TRANSPORTE_NUMERICO {
+            element DESDE {text },
+            element HASTA {text }
+        }?,
         element FECHA { xsd:dateTime } ,
         element FECHA_VTO { xsd:dateTime } ,
         element TIPO_OPERACION { "FIRME" | "REPOSICION" | "FIRME_CON_DERECHO" } ,
-        ## Número de pedido
+        ## Número de pedido de quien recibe el remito (cliente)
+        ## También conocido como número de Orden de Compra
         element NUMERO_PEDIDO { text }? ,
+        ## Número de pedido del emisor del remito
+        element NUMERO_PEDIDO_PROVEEDOR { text }? ,
         element TIPO_ENTREGA { "ENVIO" | "RETIRA" } ,
         element TRANSPORTE { text }? ,
         element OBSERVACIONES_ENTREGA { text }? ,
@@ -305,7 +372,8 @@ grammar {
             element IDENTIFICADOR { text }?,
             element NUMERO_DOCUMENTO { text }?
         } ,
-        element RESULTADO { "OK" | "CON_INCIDENCIAS" } ,
+        element TIPO_ACUSE { "RECEPCION_ELECTRONICA" | "RECEPCION_FISICA" | "PROCESADO"} ,
+        element RESULTADO { "OK" | "CON_INCIDENCIAS" | "RECHAZADO" } ,
         element DIFERENCIAS {
             element DIFERENCIA {
                 id_libro,
@@ -313,7 +381,8 @@ grammar {
                 ## para que el documento se procese sin incidencias
                 element CANTIDAD_TEORICA { xsd:int },
                 ## La cantidad efectivamente recibida
-                element CANTIDAD_REAL { xsd:int }
+                element CANTIDAD_REAL { xsd:int },
+                element OBSERVACIONES { text }?
             }
         }? ,
         observaciones?
