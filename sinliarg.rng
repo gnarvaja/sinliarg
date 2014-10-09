@@ -135,6 +135,7 @@
         <choice>
           <value>1.0</value>
           <value>1.1</value>
+          <value>1.1.1</value>
         </choice>
       </element>
       <ref name="tipomensaje">
@@ -172,6 +173,12 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       <element name="CODIGO_SINLI">
         <text/>
       </element>
+      <optional>
+        <element name="NUMERO_UNICO_LIBRERIA">
+          <a:documentation>Identificador de la librería según la tabla de mislibrerias.com.ar</a:documentation>
+          <text/>
+        </element>
+      </optional>
     </element>
   </define>
   <define name="destino">
@@ -196,6 +203,12 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       <element name="CODIGO_SINLI">
         <text/>
       </element>
+      <optional>
+        <element name="NUMERO_UNICO_LIBRERIA">
+          <a:documentation>Identificador de la librería según la tabla de mislibrerias.com.ar</a:documentation>
+          <text/>
+        </element>
+      </optional>
     </element>
   </define>
   <define name="observaciones">

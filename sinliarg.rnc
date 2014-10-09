@@ -28,7 +28,7 @@ grammar {
             ## Descripción en texto libre del contenido del archivo
             element DESCRIPCION { text } ,
             element FECHA { xsd:dateTime } , # AAAA-MM-DDTHH:MM:SS
-            element VERSION { "1.0" | "1.1" } ,
+            element VERSION { "1.0" | "1.1" | "1.1.1" } ,
             ## Tipo de archivo/mensaje. Coincide con el elemento raíz
             tipomensaje ,
             ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
@@ -44,7 +44,11 @@ grammar {
             ## Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
             ##   1. PEDIDO, cuando no se indica en el campo "DETALLE"
             element ID_SUCURSAL { text }? ,
-            element CODIGO_SINLI { text }
+            element CODIGO_SINLI { text } ,
+            ## Identificador de la librería según la tabla de mislibrerias.com.ar
+            ## Este identificador se forma de la siguiente forma:
+            ## CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123
+            element NUMERO_UNICO_LIBRERIA { text }?
     }
     ## Información del destinatario
     destino = element DESTINO {
@@ -54,7 +58,11 @@ grammar {
             ## Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes casos:
             ##   1. REMITO
             element ID_SUCURSAL { text }? ,
-            element CODIGO_SINLI { text }
+            element CODIGO_SINLI { text } ,
+            ## Identificador de la librería según la tabla de mislibrerias.com.ar
+            ## Este identificador se forma de la siguiente forma:
+            ## CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123
+            element NUMERO_UNICO_LIBRERIA { text }?
     }
     observaciones = element OBSERVACIONES {
         element ITEM {
