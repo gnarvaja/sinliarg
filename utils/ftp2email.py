@@ -94,6 +94,7 @@ class FilesystemChannel(MessageChannel):
         """
         for dirpath, dirname, filenames in os.walk(self.base_path):
             if self.dir_re.search(dirpath):
+                logging.debug("Directorio encontrado: %s" % dirpath)                
                 for filename in filenames:
                     yield os.path.join(dirpath, filename)
 
@@ -137,8 +138,10 @@ class FilesystemChannel(MessageChannel):
                 break
 
         if dst_path is None:
-            raise Exception('No existe el directorio %s para guardar el mensaje'
-                                % dst_dir)
+            dst_path = os.path.join(self.base_path, dst_dir)
+            os.mkdir(dst_path)
+#            raise Exception('No existe el directorio %s para guardar el mensaje'
+#                                % dst_dir)
 
         file_path = os.path.join(dst_path, message.sinli_type, message.filename)
         try:
@@ -188,7 +191,7 @@ class EmailChannel(MessageChannel):
         new_email['From'] = self.msg_from
         new_email['To'] = dest_addr
         new_email['Subject'] = self.gen_email_subject(sinli_message)
-        new_email.attach(MIMEText(self.gen_email_body(sinli_message)))
+        new_email.attach(MIMEText(self.gen_email_body(sinli_message), 'xml', 'utf-8'))
         xml_attach = MIMEText(sinli_message.xml, 'xml', 'utf-8')
         xml_attach['Content-disposition'] = 'attachment; filename="%s"' \
                                                 % sinli_message.filename
@@ -227,7 +230,7 @@ class EmailChannel(MessageChannel):
     def gen_email_body(self, message):
         """Genera el texto para el cuerpo del email a enviar con el mensaje
         """
-        return message.description or 'Mensaje sinliarg adjunto'
+        return (message.description or 'Mensaje sinliarg adjunto').decode("utf-8")
 
     def get_pop_server(self):
         """Inicia una conexión con el servidor pop
