@@ -96,6 +96,9 @@ grammar {
         element DESCUENTO { xsd:decimal }?,
         aduana?
     }
+    any_content = any_element* & text
+    any_attribute = attribute * { text }
+    any_element = element * { any_attribute*, any_content }
     contenidocatalogo = element CONTENIDO {
         element ITEM {
             element ISBN_13 { text },
@@ -105,12 +108,12 @@ grammar {
             element TITULO { text },
             element SUBTITULO { text },
             element CONTRATAPA { text },
-            element SINOPSIS { text },
+            element SINOPSIS { any_content },
             element METADATA { text },
             element EDITORIAL { text },
             element COLECCION { text },
             element CODIGO_BARRACOLECCION { text },
-            element FECHA_PUBLICACION { xsd:date },
+            element FECHA_PUBLICACION { text },
             element PRECIO_COMPRA { xsd:decimal },
             element MONEDA_COMPRA { text },
             element PRECIO_VENTA { xsd:decimal },
@@ -118,7 +121,7 @@ grammar {
             element ESTADO { text },
             element NOVEDAD { text },
             element ES_TEXTO { text },
-            element IDIOMA { text },
+            element IDIOMA { text }?,
             element PAGINAS { text },
             element ALTURA { xsd:int },
             element LARGO { xsd:int },
@@ -129,9 +132,9 @@ grammar {
             element NRO_EDICION { text },
             element FORMATO { text },
             element PAIS_IMPRESION { text },
-            element FECHA_IMPRESION { xsd:date },
-            element AGOTADO { text },
+            element FECHA_IMPRESION { text },
             element ACTIVO { text },
+            element AGOTADO { text },
             element CATEGORIAS {
                 element CATEGORIA {
                     attribute TIPO { text },
