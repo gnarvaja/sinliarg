@@ -22,13 +22,14 @@ grammar {
                              "MENSAJEGENERICO" | "NOTACREDITO" |
                              "NOTADEVOLUCION" | "RECEPCIONDEVOLUCION" |
                              "RECEPCIONDEVOLUCION_PENDIENTE" |
-                             "ACUSE_RECIBO" | "CATALOGO" | "CAMBIOPRECIO" }
+                             "ACUSE_RECIBO" | "CATALOGO" | "CAMBIOPRECIO" |
+                             "CATALOGO" }
     ## Informacion general del archivo/mensaje
     archivo = element ARCHIVO {
             ## Descripción en texto libre del contenido del archivo
             element DESCRIPCION { text } ,
             element FECHA { xsd:dateTime } , # AAAA-MM-DDTHH:MM:SS
-            element VERSION { "1.0" | "1.1" | "1.1.1" } ,
+            element VERSION { "1.0" | "1.1" | "1.1.1" | "2.0" } ,
             ## Tipo de archivo/mensaje. Coincide con el elemento raíz
             tipomensaje ,
             ## Identificador opcional, identifica unívocamente un mensaje dentro de los mensajes del emisor
@@ -95,9 +96,66 @@ grammar {
         element DESCUENTO { xsd:decimal }?,
         aduana?
     }
+    any_content = any_element* & text
+    any_attribute = attribute * { text }
+    any_element = element * { any_attribute*, any_content }
     contenidocatalogo = element CONTENIDO {
-        ## TO DO
-        text
+        element ITEM {
+            element ISBN_13 { text },
+            element ISBN_10 { text },
+            element EAN { text },
+            element COD_ARTICULO { text },
+            element TITULO { text },
+            element SUBTITULO { text },
+            element CONTRATAPA { text },
+            element SINOPSIS { any_content },
+            element METADATA { text },
+            element EDITORIAL { text },
+            element COLECCION { text },
+            element CODIGO_BARRACOLECCION { text },
+            element FECHA_PUBLICACION { text },
+            element PRECIO_COMPRA { xsd:decimal },
+            element MONEDA_COMPRA { text },
+            element PRECIO_VENTA { xsd:decimal },
+            element MONEDA_VENTA { text },
+            element ESTADO { text },
+            element NOVEDAD { text },
+            element ES_TEXTO { text },
+            element IDIOMA { text }?,
+            element PAGINAS { text },
+            element ALTURA { xsd:int },
+            element LARGO { xsd:int },
+            element ANCHO { xsd:int },
+            element UM { text },
+            element PESO { xsd:int },
+            element UM_PESO { text },
+            element NRO_EDICION { text },
+            element FORMATO { text },
+            element PAIS_IMPRESION { text },
+            element FECHA_IMPRESION { text },
+            element ACTIVO { text },
+            element AGOTADO { text },
+            element CATEGORIAS {
+                element CATEGORIA {
+                    attribute TIPO { text },
+                    text
+                }*
+            },
+            element LINKS {
+                element LINK {
+                    attribute TIPO { text },
+                    text
+                }*
+            },
+            element AUTORES {
+                element ITEM {
+                    attribute TIPO { text },
+                    element APELLIDO { text },
+                    element NOMBRE { text },
+                    element BIOGRAFIA { text }
+                }*
+            }
+        }+
     }
     contenidocambiodeprecio = element CONTENIDO {
         ## Fecha a partir de la cual los cambios de precio entran en vigencia
