@@ -117,6 +117,7 @@
         <value>ACUSE_RECIBO</value>
         <value>CATALOGO</value>
         <value>CAMBIOPRECIO</value>
+        <value>CATALOGO</value>
       </choice>
     </element>
   </define>
@@ -136,6 +137,7 @@
           <value>1.0</value>
           <value>1.1</value>
           <value>1.1.1</value>
+          <value>2.0</value>
         </choice>
       </element>
       <ref name="tipomensaje">
@@ -175,7 +177,9 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       </element>
       <optional>
         <element name="NUMERO_UNICO_LIBRERIA">
-          <a:documentation>Identificador de la librería según la tabla de mislibrerias.com.ar</a:documentation>
+          <a:documentation>Identificador de la librería según la tabla de mislibrerias.com.ar
+Este identificador se forma de la siguiente forma:
+CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123</a:documentation>
           <text/>
         </element>
       </optional>
@@ -205,7 +209,9 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       </element>
       <optional>
         <element name="NUMERO_UNICO_LIBRERIA">
-          <a:documentation>Identificador de la librería según la tabla de mislibrerias.com.ar</a:documentation>
+          <a:documentation>Identificador de la librería según la tabla de mislibrerias.com.ar
+Este identificador se forma de la siguiente forma:
+CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123</a:documentation>
           <text/>
         </element>
       </optional>
@@ -306,11 +312,228 @@ Es obligatorio incluirlo en las empresas que tienen sucursales en los siguientes
       </optional>
     </element>
   </define>
+  <define name="any_content">
+    <interleave>
+      <zeroOrMore>
+        <ref name="any_element"/>
+      </zeroOrMore>
+      <text/>
+    </interleave>
+  </define>
+  <define name="any_attribute">
+    <attribute>
+      <anyName/>
+    </attribute>
+  </define>
+  <define name="any_element">
+    <element>
+      <anyName/>
+      <zeroOrMore>
+        <ref name="any_attribute"/>
+      </zeroOrMore>
+      <ref name="any_content"/>
+    </element>
+  </define>
   <define name="contenidocatalogo">
     <element name="CONTENIDO">
-      <text>
-        <a:documentation>TO DO</a:documentation>
-      </text>
+      <oneOrMore>
+        <element name="ITEM">
+          <interleave>
+            <element name="ISBN_13">
+              <text/>
+            </element>
+            <element name="ISBN_10">
+              <text/>
+            </element>
+            <element name="EAN">
+              <text/>
+            </element>
+            <element name="COD_ARTICULO">
+              <text/>
+            </element>
+            <optional>
+              <element name="FECHA_ULTIMA_MODIFICACION">
+                <data type="dateTime"/>
+              </element>
+            </optional>
+            <element name="TITULO">
+              <text/>
+            </element>
+            <element name="SUBTITULO">
+              <text/>
+            </element>
+            <element name="CONTRATAPA">
+              <optional>
+                <attribute name="TIPO_CONTENIDO">
+                  <choice>
+                    <value>TEXTO_PLANO</value>
+                    <value>HTML</value>
+                  </choice>
+                </attribute>
+              </optional>
+              <ref name="any_content"/>
+            </element>
+            <optional>
+              <element name="SINOPSIS">
+                <optional>
+                  <attribute name="TIPO_CONTENIDO">
+                    <choice>
+                      <value>TEXTO_PLANO</value>
+                      <value>HTML</value>
+                    </choice>
+                  </attribute>
+                </optional>
+                <ref name="any_content"/>
+              </element>
+            </optional>
+            <element name="METADATA">
+              <text>
+                <a:documentation>Palabras claves separadas por comas</a:documentation>
+              </text>
+            </element>
+            <element name="EDITORIAL">
+              <text/>
+            </element>
+            <element name="COLECCION">
+              <text/>
+            </element>
+            <element name="CODIGO_BARRACOLECCION">
+              <text/>
+            </element>
+            <element name="FECHA_PUBLICACION">
+              <data type="dateTime"/>
+            </element>
+            <element name="PRECIO_COMPRA">
+              <data type="decimal"/>
+            </element>
+            <element name="MONEDA_COMPRA">
+              <text/>
+            </element>
+            <element name="PRECIO_VENTA">
+              <data type="decimal"/>
+            </element>
+            <element name="MONEDA_VENTA">
+              <text/>
+            </element>
+            <element name="ESTADO">
+              <text/>
+            </element>
+            <element name="NOVEDAD">
+              <text/>
+            </element>
+            <element name="ES_TEXTO">
+              <text/>
+            </element>
+            <optional>
+              <element name="IDIOMA">
+                <text/>
+              </element>
+            </optional>
+            <element name="PAGINAS">
+              <text/>
+            </element>
+            <element name="ALTURA">
+              <data type="int"/>
+            </element>
+            <element name="LARGO">
+              <data type="int"/>
+            </element>
+            <element name="ANCHO">
+              <data type="int"/>
+            </element>
+            <element name="UM">
+              <text/>
+            </element>
+            <element name="PESO">
+              <data type="int"/>
+            </element>
+            <element name="UM_PESO">
+              <text/>
+            </element>
+            <element name="NRO_EDICION">
+              <text/>
+            </element>
+            <element name="FORMATO">
+              <a:documentation>Tabla ONIX de formatos</a:documentation>
+              <text/>
+            </element>
+            <element name="PAIS_IMPRESION">
+              <text/>
+            </element>
+            <optional>
+              <element name="FECHA_IMPRESION">
+                <data type="dateTime"/>
+              </element>
+            </optional>
+            <element name="ACTIVO">
+              <choice>
+                <value>S</value>
+                <value>N</value>
+              </choice>
+            </element>
+            <element name="AGOTADO">
+              <choice>
+                <value>S</value>
+                <value>N</value>
+              </choice>
+            </element>
+            <element name="CATEGORIAS">
+              <zeroOrMore>
+                <element name="CATEGORIA">
+                  <attribute name="TIPO"/>
+                  <text/>
+                </element>
+              </zeroOrMore>
+            </element>
+            <optional>
+              <element name="LINKS">
+                <zeroOrMore>
+                  <element name="LINK">
+                    <attribute name="TIPO">
+                      <choice>
+                        <value>PORTADA</value>
+                        <value>VIDEO</value>
+                        <value>PRENSA</value>
+                        <value>PDF_CAPITULOS</value>
+                        <value>EPUB_CAPITULOS</value>
+                      </choice>
+                    </attribute>
+                    <text>
+                      <a:documentation>Direccion http o ftp (en formato ftp://usuario:clave@host/carpeta)</a:documentation>
+                    </text>
+                  </element>
+                </zeroOrMore>
+              </element>
+            </optional>
+            <element name="AUTORES">
+              <zeroOrMore>
+                <element name="ITEM">
+                  <interleave>
+                    <attribute name="TIPO"/>
+                    <element name="APELLIDO">
+                      <text/>
+                    </element>
+                    <element name="NOMBRE">
+                      <text/>
+                    </element>
+                    <element name="BIOGRAFIA">
+                      <optional>
+                        <attribute name="TIPO_CONTENIDO">
+                          <choice>
+                            <value>TEXTO_PLANO</value>
+                            <value>HTML</value>
+                          </choice>
+                        </attribute>
+                      </optional>
+                      <ref name="any_content"/>
+                    </element>
+                  </interleave>
+                </element>
+              </zeroOrMore>
+            </element>
+          </interleave>
+        </element>
+      </oneOrMore>
     </element>
   </define>
   <define name="contenidocambiodeprecio">
