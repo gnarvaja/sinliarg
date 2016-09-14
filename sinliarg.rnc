@@ -105,9 +105,9 @@ grammar {
             element ISBN_10 { text } &
             element EAN { text } &
             element COD_ARTICULO { text } &
-            element FECHA_ULTIMA_MODIFICACION { xsd:dateTime }? &
+            element FECHA_ULTIMA_MODIFICACION { xsd:dateTime | "0000-00-00T00:00:00" }? &
             element TITULO { text } &
-            element SUBTITULO { text } &
+            element SUBTITULO { text }? &
             element CONTRATAPA {
                 attribute TIPO_CONTENIDO { "TEXTO_PLANO" | "HTML" }?,
                 any_content 
@@ -123,7 +123,7 @@ grammar {
             element EDITORIAL { text } &
             element COLECCION { text } &
             element CODIGO_BARRACOLECCION { text } &
-            element FECHA_PUBLICACION { xsd:dateTime } &
+            element FECHA_PUBLICACION { xsd:dateTime | "0000-00-00T00:00:00" }? &
             element PRECIO_COMPRA { xsd:decimal } &
             element MONEDA_COMPRA { text } &
             element PRECIO_VENTA { xsd:decimal } &
@@ -143,7 +143,7 @@ grammar {
             ## Tabla ONIX de formatos
             element FORMATO { text } &
             element PAIS_IMPRESION { text } &
-            element FECHA_IMPRESION { xsd:dateTime }? &
+            element FECHA_IMPRESION { xsd:dateTime | "0000-00-00T00:00:00" }? &
             element ACTIVO { "S" | "N" } &
             element AGOTADO { "S" | "N" } &
             element CATEGORIAS {

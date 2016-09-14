@@ -353,15 +353,20 @@ CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123</a:documentation>
             </element>
             <optional>
               <element name="FECHA_ULTIMA_MODIFICACION">
-                <data type="dateTime"/>
+                <choice>
+                  <data type="dateTime"/>
+                  <value>0000-00-00T00:00:00</value>
+                </choice>
               </element>
             </optional>
             <element name="TITULO">
               <text/>
             </element>
-            <element name="SUBTITULO">
-              <text/>
-            </element>
+            <optional>
+              <element name="SUBTITULO">
+                <text/>
+              </element>
+            </optional>
             <element name="CONTRATAPA">
               <optional>
                 <attribute name="TIPO_CONTENIDO">
@@ -400,9 +405,14 @@ CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123</a:documentation>
             <element name="CODIGO_BARRACOLECCION">
               <text/>
             </element>
-            <element name="FECHA_PUBLICACION">
-              <data type="dateTime"/>
-            </element>
+            <optional>
+              <element name="FECHA_PUBLICACION">
+                <choice>
+                  <data type="dateTime"/>
+                  <value>0000-00-00T00:00:00</value>
+                </choice>
+              </element>
+            </optional>
             <element name="PRECIO_COMPRA">
               <data type="decimal"/>
             </element>
@@ -462,7 +472,10 @@ CUIT-CODIGO_SUCURSAL - Ejemplo: 30709533939-0123</a:documentation>
             </element>
             <optional>
               <element name="FECHA_IMPRESION">
-                <data type="dateTime"/>
+                <choice>
+                  <data type="dateTime"/>
+                  <value>0000-00-00T00:00:00</value>
+                </choice>
               </element>
             </optional>
             <element name="ACTIVO">
