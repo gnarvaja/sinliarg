@@ -265,9 +265,11 @@ class EmailChannel(MessageChannel):
         self.messages = {}
 
         for email_ids in pop_server.uidl()[1]:
+            email_ids = email_ids.decode("utf-8")
             email_nro, email_uid = email_ids.split(' ')
             try:
-                email_data = '\n'.join(pop_server.retr(email_nro)[1])
+                email_data = '\n'.join([x.decode("utf-8")
+                                        for x in pop_server.retr(email_nro)[1]])
                 email = email_parser.parsestr(email_data)
             except Exception:
                 logging.error('Error leyendo email uid: %s\n%s' % (email_uid, traceback.format_exc()))
@@ -304,6 +306,7 @@ class EmailChannel(MessageChannel):
         deleted = False
         pop_server = self.get_pop_server()
         for email_ids in pop_server.uidl()[1]:
+            email_ids = email_ids.decode("utf-8")
             email_nro, email_uid = email_ids.split(' ')
             if email_uid == msg_id:
                 logging.info('Eliminando email uid: %s del servidor POP' % msg_id)
