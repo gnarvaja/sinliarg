@@ -2,7 +2,10 @@
 # vim: set fileencoding=utf-8 :
 
 import argparse
-import cStringIO
+try:
+    from io import StringIO
+except ImportError:  # python2
+    from cStringIO import StringIO
 import csv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -29,7 +32,7 @@ class SinliargMessage(object):
             :filename: nombre del archivo que contiene el XML del mensaje
         """
         self.xml = msg_data
-        xmltree = cElementTree.parse(cStringIO.StringIO(self.xml))
+        xmltree = cElementTree.parse(StringIO(self.xml))
         self.dst_code = xmltree.findtext('DESTINO/CODIGO_SINLI')
         self.src_code = xmltree.findtext('ORIGEN/CODIGO_SINLI')
         self.description = xmltree.findtext('ARCHIVO/DESCRIPCION')
@@ -113,13 +116,13 @@ class FilesystemChannel(MessageChannel):
         try:
             logging.info('Moviendo archivo de mensaje %s' % msg_id)
             shutil.move(msg_id, os.path.join(archived_path, filename))
-        except IOError, e:                  # si no existia el directorio intenta crearlo
+        except IOError as e:                  # si no existia el directorio intenta crearlo
             if e.errno == errno.ENOENT:
                 try:
                     logging.error('Creando directorio para mensajes archivados en %s'
                                     % archived_path)
                     os.makedirs(archived_path)
-                except OSError, e:          # si da error porque ya existe lo ignora
+                except OSError as e:          # si da error porque ya existe lo ignora
                     if e.exception.errno != errno.EEXIST:
                         raise
                 shutil.move(msg_id, os.path.join(archived_path, filename))
@@ -146,7 +149,7 @@ class FilesystemChannel(MessageChannel):
         file_path = os.path.join(dst_path, message.sinli_type, message.filename)
         try:
             dst_file = open(file_path, 'w')
-        except IOError, e:      # si no existia el directorio intenta crearlo
+        except IOError as e:      # si no existia el directorio intenta crearlo
             logging.debug('Creando directorio %s' % os.path.join(dst_path, message.sinli_type))
             if e.errno == errno.ENOENT:
                 os.makedirs(os.path.join(dst_path, message.sinli_type))
@@ -200,6 +203,8 @@ class EmailChannel(MessageChannel):
         # conectar con el servidor y hacer en envio
         smtp_server = smtplib.SMTP(self.smtp_settings['host'],
                                    port=self.smtp_settings.get('port', None), timeout=5)
+        if self.smtp_settings.get("tls", False):
+            smtp_server.starttls()
         if self.smtp_settings['user'] is not None:
             smtp_server.login(self.smtp_settings['user'],
                               self.smtp_settings['pass'])
@@ -239,6 +244,8 @@ class EmailChannel(MessageChannel):
                         % (self.pop_settings['host'], self.pop_settings.get('port', None)))
         pop_server = poplib.POP3(self.pop_settings['host'],
                                  port=self.pop_settings.get('port', None) or 110)
+        if self.pop_settings.get("tls", False):
+            pop_server.stls()
         pop_server.user(self.pop_settings['user'])
         pop_server.pass_(self.pop_settings['pass'])
         return pop_server
@@ -357,7 +364,7 @@ def __main__(argv=None):
         with open(args.settings) as i:
             settings = json.load(i)
     except Exception:
-        print 'Error abriendo archivo de configuracion: %s\n\n' % args.settings
+        print('Error abriendo archivo de configuracion: %s\n\n' % args.settings)
         raise
 
     # configurar el log
