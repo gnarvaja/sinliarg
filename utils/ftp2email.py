@@ -94,7 +94,7 @@ class FilesystemChannel(MessageChannel):
         """Devuelve el mensaje msg_id
             :msg_id: el id del mensaje es el path al archivo con su contenido
         """
-        with open(msg_id) as i:
+        with open(msg_id, "rb") as i:
             return SinliargMessage(i.read(), filename=os.path.split(msg_id)[1])
 
     def load_messages(self):
@@ -205,7 +205,8 @@ class EmailChannel(MessageChannel):
 
         # conectar con el servidor y hacer en envio
         smtp_server = smtplib.SMTP(self.smtp_settings['host'],
-                                   port=self.smtp_settings.get('port', None), timeout=5)
+                                   port=self.smtp_settings.get('port', None),
+                                   timeout=self.smtp_settings.get("timeout", 30))
         if self.smtp_settings.get("tls", False):
             smtp_server.starttls()
         if self.smtp_settings['user'] is not None:
