@@ -3,13 +3,16 @@
 
 import argparse
 try:
-    from io import StringIO
+    from io import BytesIO
 except ImportError:  # python2
-    from cStringIO import StringIO
+    from cStringIO import StringIO as BytesIO
 import csv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.parser import Parser as emailParser
+try:
+    from email.parser import BytesParser as emailParser
+except ImportError:  # python2
+    from email.parser import Parser as emailParser
 import errno
 import json
 import logging
@@ -23,6 +26,8 @@ import traceback
 import xml.etree.cElementTree as cElementTree
 
 
+settings = None
+
 class SinliargMessage(object):
     """Mensaje de sinliarg"""
 
@@ -32,7 +37,7 @@ class SinliargMessage(object):
             :filename: nombre del archivo que contiene el XML del mensaje
         """
         self.xml = msg_data
-        xmltree = cElementTree.parse(StringIO(self.xml))
+        xmltree = cElementTree.parse(BytesIO(self.xml))
         self.dst_code = xmltree.findtext('DESTINO/CODIGO_SINLI')
         self.src_code = xmltree.findtext('ORIGEN/CODIGO_SINLI')
         self.description = xmltree.findtext('ARCHIVO/DESCRIPCION')
@@ -97,22 +102,22 @@ class FilesystemChannel(MessageChannel):
         """
         for dirpath, dirname, filenames in os.walk(self.base_path):
             if self.dir_re.search(dirpath):
-                logging.debug("Directorio encontrado: %s" % dirpath)                
+                logging.debug("Directorio encontrado: %s" % dirpath)
                 for filename in filenames:
                     yield os.path.join(dirpath, filename)
 
-    def mark_message(self, msg_id):
+    def mark_message(self, msg_id, error=False):
         """Marca un mensaje como procesado/leido
             Mueve el archivo con el mensaje a un directorio 'leidos'
             :msg_id: path al archivo que contiene el mensaje
         """
         if not os.path.isfile(msg_id):
-            logging.error('El archivo del mensaje no existe %s'
-                            % msg_id)
+            logging.error('El archivo del mensaje no existe %s' % msg_id)
             return
 
         base_dir, filename = os.path.split(msg_id)
-        archived_path = os.path.join(base_dir, 'archived')
+        dirname = "failed" if error else "archived"
+        archived_path = os.path.join(base_dir, dirname)
         try:
             logging.info('Moviendo archivo de mensaje %s' % msg_id)
             shutil.move(msg_id, os.path.join(archived_path, filename))
@@ -143,17 +148,15 @@ class FilesystemChannel(MessageChannel):
         if dst_path is None:
             dst_path = os.path.join(self.base_path, dst_dir)
             os.mkdir(dst_path)
-#            raise Exception('No existe el directorio %s para guardar el mensaje'
-#                                % dst_dir)
 
         file_path = os.path.join(dst_path, message.sinli_type, message.filename)
         try:
-            dst_file = open(file_path, 'w')
+            dst_file = open(file_path, 'bw')
         except IOError as e:      # si no existia el directorio intenta crearlo
             logging.debug('Creando directorio %s' % os.path.join(dst_path, message.sinli_type))
             if e.errno == errno.ENOENT:
                 os.makedirs(os.path.join(dst_path, message.sinli_type))
-                dst_file = open(file_path, 'w')
+                dst_file = open(file_path, 'bw')
             else:
                 raise
 
@@ -235,7 +238,7 @@ class EmailChannel(MessageChannel):
     def gen_email_body(self, message):
         """Genera el texto para el cuerpo del email a enviar con el mensaje
         """
-        return (message.description or 'Mensaje sinliarg adjunto').decode("utf-8")
+        return (message.description or 'Mensaje sinliarg adjunto')
 
     def get_pop_server(self):
         """Inicia una conexión con el servidor pop
@@ -268,12 +271,11 @@ class EmailChannel(MessageChannel):
             email_ids = email_ids.decode("utf-8")
             email_nro, email_uid = email_ids.split(' ')
             try:
-                email_data = '\n'.join([x.decode("utf-8")
-                                        for x in pop_server.retr(email_nro)[1]])
-                email = email_parser.parsestr(email_data)
+                email_data = b'\n'.join(pop_server.retr(email_nro)[1])
             except Exception:
                 logging.error('Error leyendo email uid: %s\n%s' % (email_uid, traceback.format_exc()))
                 continue
+            email = email_parser.parse(BytesIO(email_data))
             logging.info('Leyendo email asunto: %s' % email.get('subject', None))
             if self.is_sinliarg(email):
                 logging.debug('  email sinliarg reconocido')
@@ -290,25 +292,34 @@ class EmailChannel(MessageChannel):
             raise Exception('El mensaje id:%s no fue leido' % msg_id)
 
         email_part = [x for x in self.messages[msg_id].walk()
-                        if x.get_content_type() in self.sinliMimeTypes][0]
+                      if x.get_content_type() in self.sinliMimeTypes][0]
 
         message_data = email_part.get_payload(decode=True)
-        if not message_data.startswith('<?'):       # para leer mensajes con registro SINLI
-            message_data = message_data[message_data.find('<?'):]
+        if not message_data.startswith(b'<?'):       # para leer mensajes con registro SINLI
+            message_data = message_data[message_data.find(b'<?'):]
 
         return SinliargMessage(message_data, filename=email_part.get_filename())
 
-    def mark_message(self, msg_id):
+    def mark_message(self, msg_id, error=False):
         """Marca un mensaje como procesado/leido
             Elimina el email del servidor pop
             :msg_id: uid del email
         """
+        global settings
         deleted = False
         pop_server = self.get_pop_server()
+        base_dir = settings["base_path"]
+        error_path = os.path.join(base_dir, "not_well_formed_emails")
         for email_ids in pop_server.uidl()[1]:
             email_ids = email_ids.decode("utf-8")
             email_nro, email_uid = email_ids.split(' ')
             if email_uid == msg_id:
+                if error:
+                    logging.info('Guardando mail erróneo uid: %s' % msg_id)
+                    if not os.path.isdir(error_path):
+                        os.makedirs(error_path)
+                    filename = os.path.join(error_path, "%s.msg" % msg_id)
+                    open(filename, "wb").write(b'\n'.join(pop_server.retr(email_nro)[1]))
                 logging.info('Eliminando email uid: %s del servidor POP' % msg_id)
                 pop_server.dele(email_nro)
                 deleted = True
@@ -330,6 +341,10 @@ def pipeChannels(src_channel, dst_channel):
         try:
             sinli_message = src_channel.get_message(msg_id)
             logging.debug('...leido correctamente')
+        except cElementTree.ParseError:
+            logging.error('Error error de parseo leyendo el mensaje %s.\n%s', msg_id, traceback.format_exc())
+            src_channel.mark_message(msg_id, True)
+            continue
         except Exception:
             logging.error('Error obteniendo datos del mensaje\n%s' % traceback.format_exc())
             continue
@@ -351,6 +366,7 @@ def __main__(argv=None):
         Por cada archivo envia un email de sinli
         Despues de enviar el email mueve el archivo a otro directorio
     """
+    global settings
 
     arg_parser = argparse.ArgumentParser(description='Enviar mensajes sinliarg entre distintos canales')
     arg_parser.add_argument('-i', '--input', required=True,
